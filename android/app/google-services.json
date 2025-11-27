@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "940281609046",
+    "project_id": "my-music-14537",
+    "storage_bucket": "my-music-14537.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:940281609046:android:ea04ff02b924dbc9d634f7",
+        "android_client_info": {
+          "package_name": "com.example.percobaan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBM0XU7H7bcBnZdRIrW6x49MeDbfdkEX_E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
