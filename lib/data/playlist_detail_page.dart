@@ -1,14 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:percobaan/widget/library_item_class.dart';
 import 'package:percobaan/data/dummy_songs.dart';
-import 'package:percobaan/widget/library_item_class.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class PlaylistDetailPage extends StatelessWidget {
   final LibraryItem playlistItem;
 
-
-
-  PlaylistDetailPage({required this.playlistItem, });
+  PlaylistDetailPage({required this.playlistItem});
 
   @override
   Widget build(BuildContext context) {
@@ -39,10 +37,26 @@ class PlaylistDetailPage extends StatelessWidget {
                 fit: BoxFit.cover,
               ),
             ),
-            title: Text(song.title, style: TextStyle(color: Colors.white),),
-            subtitle: Text(song.artist, style: TextStyle(color: Colors.white70),),
-            trailing: Icon(Icons.play_arrow, color: Colors.white,),
-            onTap: () {
+            title: Text(song.title, style: TextStyle(color: Colors.white)),
+            subtitle: Text(
+              song.artist,
+              style: TextStyle(color: Colors.white70),
+            ),
+            trailing: Icon(Icons.play_arrow, color: Colors.white),
+            onTap: () async {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text("Playing: ${song.title}..."),
+                  backgroundColor: Colors.grey[900],
+                  duration: Duration(seconds: 10),
+                ),
+              );
+              final player = AudioPlayer();
+              await player.play(
+                UrlSource(
+                  'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+                ),
+              );
             },
           );
         },
