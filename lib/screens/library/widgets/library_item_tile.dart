@@ -29,7 +29,7 @@ class LibraryItemTile extends StatelessWidget {
       onLongPress: onLongPress,
       child: Container(
         width: double.infinity,
-        child: LibraryItem( // Widget tampilan item kamu
+        child: LibraryItem( 
           title: item.title,
           imagePath: item.imagePath,
           iconInContainer: item.iconInContainer,

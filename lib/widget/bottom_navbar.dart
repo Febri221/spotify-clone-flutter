@@ -16,10 +16,21 @@ class _BottomNavbarState extends State<BottomNavbar> {
   int _selectedIndex = 2;
   final GlobalKey<NavigatorState> libraryNavKey = GlobalKey<NavigatorState>();
   final ScrollController libraryScrollController = ScrollController();
+  final GlobalKey<LibraryPageState> libraryKey = GlobalKey<LibraryPageState>();
 
   final List<Widget> _pages = [];
 
   void _onItemTapped(int index) {
+    if (index == 4) {
+      setState(() {
+        _selectedIndex = 2;
+      });
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      libraryKey.currentState?.showCreateModalFromOutside();
+    });
+    return;
+    }
     if (_selectedIndex == index) {
       if (index == 2) {
         libraryScrollController.animateTo(
@@ -61,6 +72,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
             onGenerateRoute: (settings) {
               return MaterialPageRoute(
                 builder: (context) => LibraryPage(
+                  key: libraryKey,
                   externalScrollController: libraryScrollController,
                 ),
               );

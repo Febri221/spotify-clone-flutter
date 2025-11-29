@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:percobaan/models/song_model.dart';
 
 class LibraryItem extends StatelessWidget {
   final String subtitle;
@@ -13,6 +14,7 @@ class LibraryItem extends StatelessWidget {
   bool isPinnedIcon;
   final VoidCallback? onTogglePin;
   final String? category;
+  final List<SongModel> songs;
 
   LibraryItem({
     required this.title,
@@ -27,6 +29,7 @@ class LibraryItem extends StatelessWidget {
     this.isPinnedIcon = false,
     this.onTogglePin,
     this.category,
+    this.songs = const [],
   });
 
   @override
@@ -90,7 +93,7 @@ class LibraryItem extends StatelessWidget {
               child: Icon(
                 isPinnedIcon ? Icons.push_pin : null,
                 color: Colors.green,
-                size: 16,
+                size: 14,
               ),
             ),
           ],
@@ -104,8 +107,8 @@ class LibraryItem extends StatelessWidget {
         children: [
           // ========== GAMBAR ==========
           Container(
-            height: 100,
-            width: 100,
+            height: 60,
+            width: 60,
             decoration: BoxDecoration(
               borderRadius: !isArtist
                       ? (title == 'New Episodes'
