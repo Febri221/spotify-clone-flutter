@@ -96,7 +96,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
           unselectedItemColor: Colors.white54,
           items: [
             BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+            BottomNavigationBarItem(icon: Icon(Icons.download), label: 'Downloads'),
             BottomNavigationBarItem(
               icon: Icon(Icons.menu_book),
               label: 'Your Library',
