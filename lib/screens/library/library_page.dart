@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:percobaan/widget/library_item_class.dart';
 import 'package:percobaan/data/library_items.dart';
-
+import 'package:percobaan/screens/library/widgets/playlist_detail_page.dart';
 import 'package:percobaan/screens/library/widgets/library_header.dart';
 import 'package:percobaan/screens/library/widgets/library_item_tile.dart';
 import 'package:percobaan/screens/library/widgets/category_selector.dart';
 import 'package:percobaan/screens/library/widgets/library_bottom_sheet.dart';
 import 'package:percobaan/screens/library/widgets/create_modal.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+// Audio & Permission
+import 'package:on_audio_query/on_audio_query.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:permission_handler/permission_handler.dart'; // PENTING
 
 class LibraryPage extends StatefulWidget {
   final ScrollController? externalScrollController;
@@ -17,11 +23,17 @@ class LibraryPage extends StatefulWidget {
 }
 
 class LibraryPageState extends State<LibraryPage> {
-  final List<String> categories = ['All', 'Playlists', 'Podcasts', 'Artists'];
+  final List<String> categories = ['All', 'Playlists', 'Downloads'];
   int selectedCategory = 0;
   bool isGrid = false;
+
   late ScrollController _scrollController;
   late List<LibraryItem> myLibrary;
+
+  // Audio
+  final OnAudioQuery _audioQuery = OnAudioQuery();
+  final AudioPlayer _player = AudioPlayer(); // Opsional kalau gak dipake di sini
+  List<SongModel> _realSongs = [];
 
   void showCreateModalFromOutside() {
     CreateModal.show(context, (judul, kategori) {
@@ -34,9 +46,126 @@ class LibraryPageState extends State<LibraryPage> {
     super.initState();
     _scrollController = widget.externalScrollController ?? ScrollController();
     myLibrary = List.from(defaultItems);
+
+    _initializeData();
   }
 
-  // --- LOGIC DATA ---
+  // ===============================
+  //   FIX: LOGIC PERMISSION & FETCH
+  // ===============================
+
+  Future<void> requestPermissionAndFetchSongs() async {
+    // 1. Cek Permission pake permission_handler (Lebih Stabil)
+    var statusStorage = await Permission.storage.status;
+    var statusAudio = await Permission.audio.status;
+
+    if (!statusStorage.isGranted && !statusAudio.isGranted) {
+      // Minta Izin
+      Map<Permission, PermissionStatus> statuses = await [
+        Permission.storage,
+        Permission.audio,
+      ].request();
+
+      // Cek hasil
+      bool granted = statuses[Permission.storage] == PermissionStatus.granted || 
+                     statuses[Permission.audio] == PermissionStatus.granted;
+
+      if (!granted) {
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Aplikasi butuh izin penyimpanan untuk memutar musik!")),
+          );
+        }
+        return; // Stop di sini kalau gak dikasih izin
+      }
+    }
+
+    // 2. Jeda dikit (Trik ampuh buat Emulator biar gak nge-bug permission)
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    // 3. Ambil Lagu
+    try {
+      List<SongModel> songs = await _audioQuery.querySongs(
+        sortType: SongSortType.DATE_ADDED,
+        orderType: OrderType.DESC_OR_GREATER,
+        uriType: UriType.EXTERNAL,
+        ignoreCase: true,
+      );
+
+      if (mounted) {
+        setState(() {
+          _realSongs = songs;
+
+          // Update item "Downloads"
+          final downloadIndex =
+              myLibrary.indexWhere((item) => item.title == 'Downloads');
+
+          if (downloadIndex != -1) {
+            var oldItem = myLibrary[downloadIndex];
+            myLibrary[downloadIndex] = LibraryItem(
+              title: oldItem.title,
+              iconInContainer: oldItem.iconInContainer,
+              titleColor: oldItem.titleColor,
+              subtitle: "Playlists • ${songs.length} songs",
+              category: oldItem.category,
+              containerColor: oldItem.containerColor,
+            );
+          }
+        });
+      }
+    } catch (e) {
+      print("ERROR FETCHING SONGS: $e");
+    }
+  }
+
+  void _initializeData() async {
+    await requestPermissionAndFetchSongs();
+    fetchHivePlaylists();
+  }
+
+  // ===============================
+  //   HIVE PLAYLISTS
+  // ===============================
+
+  void fetchHivePlaylists() async {
+    if (!Hive.isBoxOpen('Playlists')) {
+      await Hive.openBox('Playlists');
+    }
+
+    final playlistBox = Hive.box('Playlists');
+    final playlistNames = playlistBox.keys.cast<String>().toList();
+
+    List<LibraryItem> hiveItems = playlistNames.map((name) {
+      List songs = playlistBox.get(name, defaultValue: []);
+      int count = songs.length;
+
+      return LibraryItem(
+        title: name,
+        iconInContainer: Container(
+          decoration: BoxDecoration(
+            color: Colors.grey[800],
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Icon(Icons.music_note, color: Colors.white),
+        ),
+        titleColor: Colors.white,
+        subtitle: "Playlist • $count songs",
+        category: 'Playlists',
+        containerColor: Colors.grey[900],
+      );
+    }).toList();
+
+    if (mounted) {
+      setState(() {
+        myLibrary.addAll(hiveItems);
+      });
+    }
+  }
+
+  // ===============================
+  //   FILTERING & UI
+  // ===============================
+
   List<LibraryItem> get filteredItems {
     String selected = categories[selectedCategory];
     if (selected == 'All') return myLibrary;
@@ -47,6 +176,7 @@ class LibraryPageState extends State<LibraryPage> {
     setState(() {
       item.isPinned = !item.isPinned;
       item.isPinnedIcon = item.isPinned;
+
       myLibrary.sort((a, b) {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
@@ -63,9 +193,8 @@ class LibraryPageState extends State<LibraryPage> {
           title: title,
           titleColor: Colors.white,
           subtitle: '$category • 0 songs',
-          iconInContainer: Icon( category == 'Artists'
-              ? Icons.person
-              : Icons.music_note,
+          iconInContainer: Icon(
+            category == 'Artists' ? Icons.person : Icons.music_note,
           ),
           containerColor: Colors.grey[850],
           category: category,
@@ -74,7 +203,6 @@ class LibraryPageState extends State<LibraryPage> {
     });
   }
 
-  // --- UI BUILDER ---
   Widget buildListBody() {
     return ListView.builder(
       controller: _scrollController,
@@ -163,12 +291,50 @@ class LibraryPageState extends State<LibraryPage> {
   }
 
   Widget _buildTile(LibraryItem item, bool grid) {
-    return LibraryItemTile(
-      item: item,
-      isGridMode: grid,
-      onTogglePin: () => togglePin(item),
-      onLongPress: () =>
-          LibraryBottomSheet.show(context, item, () => togglePin(item)),
+    return GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTap: () {
+        if (item.title == 'Downloads') {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PlaylistDetailPage(
+                playlistTitle: 'Downloads',
+                songs: _realSongs,
+              ),
+            ),
+          );
+        } else if (item.category == 'Playlists') {
+          final playlistBox = Hive.box('Playlists');
+
+          final List<dynamic> songList =
+              playlistBox.get(item.title, defaultValue: []);
+
+          List<SongModel> playlistSongs = [];
+          try {
+            playlistSongs = songList.cast<SongModel>().toList();
+          } catch (e) {
+            print('Gagal convert lagu: $e');
+          }
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => PlaylistDetailPage(
+                playlistTitle: item.title,
+                songs: playlistSongs,
+              ),
+            ),
+          );
+        }
+      },
+      child: LibraryItemTile(
+        item: item,
+        isGridMode: grid,
+        onTogglePin: () => togglePin(item),
+        onLongPress: () =>
+            LibraryBottomSheet.show(context, item, () => togglePin(item)),
+      ),
     );
   }
 }

@@ -34,7 +34,6 @@ final List<LibraryItem> defaultItems = [
     subtitle: 'Playlists • 114 songs',
     containerColor: null,
     category: 'Playlists',
-    songs: [laguWhatMakesYouBeautiful, lagu18],
 
   ),
   LibraryItem(
@@ -48,7 +47,7 @@ final List<LibraryItem> defaultItems = [
     subtitle: 'Updated Jan 25, 2025',
     containerColor: Color(0xFF5E3DB3),
     category: 'Playlists',
-    songs: [laguAboutYou],
+    
   ),
   LibraryItem(
     title: 'Your Episodes',
@@ -65,7 +64,7 @@ final List<LibraryItem> defaultItems = [
     titleColor: Colors.white,
     subtitle: 'Playlists • Download',
     containerColor: Colors.green.shade900,
-    category: 'Playlists',
+    category: 'Downloads',
     songs: [],
   ),
   

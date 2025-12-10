@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:percobaan/data/playlist_detail_page.dart';
+import 'package:percobaan/screens/library/widgets/playlist_detail_page.dart';
 import 'package:percobaan/widget/library_item_class.dart';
 
 class LibraryItemTile extends StatelessWidget {
@@ -20,12 +20,7 @@ class LibraryItemTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => PlaylistDetailPage(playlistItem: item)),
-        );
-      },
+      
       onLongPress: onLongPress,
       child: Container(
         width: double.infinity,

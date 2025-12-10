@@ -5,22 +5,20 @@ class LibraryBottomSheet {
   static void show(BuildContext context, dynamic item, VoidCallback onPinToggled) {
     showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
       barrierColor: Colors.transparent,
       backgroundColor: Colors.transparent,
-      isScrollControlled: true,
       builder: (context) {
-        return DraggableScrollableSheet(
-          initialChildSize: 0.5,
-          minChildSize: 0.3,
-          maxChildSize: 0.9,
-          builder: (_, controller) {
-            return Container(
+        return Wrap(
+          children: [
+            Container(
               decoration: BoxDecoration(
                 color: Color(0xFF191414),
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
-              child: ListView(
-                controller: controller,
+              padding: EdgeInsets.only(bottom: 20),
+               child: Column(
+               mainAxisSize: MainAxisSize.min,
                 children: [
                   Center(
                     child: Container(
@@ -73,10 +71,11 @@ class LibraryBottomSheet {
                   ),
                 ],
               ),
+            ),
+          ] 
+             
             );
           },
         );
-      },
-    );
   }
 }

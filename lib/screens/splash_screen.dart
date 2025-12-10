@@ -28,7 +28,7 @@ class _SplashScreenState extends State<SplashScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget> [
             Icon(Icons.music_note, color: Colors.green, size: 80),
-            Text('My Music App', style: TextStyle(color: Colors.white, fontSize: 22),),
+            Text('AI Music', style: TextStyle(color: Colors.white, fontSize: 22),),
           ],
         ),
       ),

@@ -6,7 +6,7 @@ class LibraryItem extends StatelessWidget {
   final String title;
   final Color titleColor;
   final String? imagePath;
-  final Icon? iconInContainer;
+  final Widget iconInContainer;
   final Gradient? containerGradient;
   final Color? containerColor;
   final bool isGrid;
@@ -19,7 +19,7 @@ class LibraryItem extends StatelessWidget {
   LibraryItem({
     required this.title,
     this.containerGradient,
-    this.iconInContainer,
+    required this.iconInContainer,
     this.imagePath,
     required this.titleColor,
     required this.subtitle,
@@ -56,16 +56,21 @@ class LibraryItem extends StatelessWidget {
                   shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
                   color: containerGradient == null ? containerColor : null,
                   gradient: containerGradient,
+                  image: imagePath != null
+                      ? DecorationImage(
+                          image: AssetImage(imagePath!),
+                          fit: BoxFit.cover,
+                        )
+                      : null,
                 ),
-                child: imagePath != null
-                    ? (isArtist
-                          ? ClipOval(
-                              child: Image.asset(imagePath!, fit: BoxFit.cover),
-                            )
-                          : ClipRRect(
-                              child: Image.asset(imagePath!, fit: BoxFit.cover),
-                            ))
-                    : Center(child: iconInContainer ?? SizedBox()),
+                child: imagePath == null
+                    ? Center(
+                        child: Transform.scale(
+                          scale: 2,
+                          child: iconInContainer,
+                        ),
+                      )
+                    : null,
               ),
             ),
             SizedBox(height: 8),
@@ -93,7 +98,7 @@ class LibraryItem extends StatelessWidget {
               child: Icon(
                 isPinnedIcon ? Icons.push_pin : null,
                 color: Colors.green,
-                size: 14,
+                size: 20,
               ),
             ),
           ],
@@ -111,10 +116,8 @@ class LibraryItem extends StatelessWidget {
             width: 60,
             decoration: BoxDecoration(
               borderRadius: !isArtist
-                      ? (title == 'New Episodes'
-                            ? BorderRadius.circular(12)
-                            : null)
-                      : null,
+                  ? (title == 'New Episodes' ? BorderRadius.circular(12) : null)
+                  : null,
               shape: isArtist ? BoxShape.circle : BoxShape.rectangle,
               color: containerGradient == null ? containerColor : null,
               gradient: containerGradient,

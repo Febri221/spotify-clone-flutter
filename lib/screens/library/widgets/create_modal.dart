@@ -6,6 +6,7 @@ class CreateModal {
     Function(String, String) onItemCreated,
   ) {
     showModalBottomSheet(
+      useRootNavigator: true,
       context: context,
       backgroundColor: Colors.transparent,
       builder: (context) => Container(
