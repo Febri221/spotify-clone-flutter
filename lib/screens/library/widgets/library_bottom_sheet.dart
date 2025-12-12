@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 class LibraryBottomSheet {
   // Kita butuh context, item datanya, dan fungsi buat nge-Pin
-  static void show(BuildContext context, dynamic item, VoidCallback onPinToggled) {
-    showModalBottomSheet(
+  static Future <void> show(BuildContext context, dynamic item, VoidCallback onPinToggled) {
+    return showModalBottomSheet(
       context: context,
       useRootNavigator: true,
       barrierColor: Colors.transparent,

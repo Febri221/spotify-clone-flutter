@@ -43,6 +43,7 @@ dependencies:
   hive_flutter: ^1.1.0
   path_provider: ^2.1.2
   marquee: ^2.3.0
+  device_info_plus: ^12.3.0
   
 
 dev_dependencies:

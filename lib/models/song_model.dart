@@ -12,10 +12,10 @@ class SongModel {
   });
 
   Map<String, dynamic> toMap() => {
-    'title': 'title',
-    'artist': 'artist',
-    'imageUrl': 'imageUrl',
-    'audiioUrl': 'audioUrl',
+    'title': title,
+    'artist': artist,
+    'imageUrl': imageUrl,
+    'audioUrl': audioUrl,
   };
 
   factory SongModel.fromMap(Map<String, dynamic> map) {

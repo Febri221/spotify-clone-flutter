@@ -26,13 +26,13 @@ class LibraryPageState extends State<LibraryPage> {
   final List<String> categories = ['All', 'Playlists', 'Downloads'];
   int selectedCategory = 0;
   bool isGrid = false;
+  LibraryItem? _activeItem;
 
   late ScrollController _scrollController;
   late List<LibraryItem> myLibrary;
 
   // Audio
   final OnAudioQuery _audioQuery = OnAudioQuery();
-  final AudioPlayer _player = AudioPlayer(); // Opsional kalau gak dipake di sini
   List<SongModel> _realSongs = [];
 
   void showCreateModalFromOutside() {
@@ -57,6 +57,7 @@ class LibraryPageState extends State<LibraryPage> {
   Future<void> requestPermissionAndFetchSongs() async {
     // 1. Cek Permission pake permission_handler (Lebih Stabil)
     var statusStorage = await Permission.storage.status;
+    var statusPhotos = await Permission.photos.status;
     var statusAudio = await Permission.audio.status;
 
     if (!statusStorage.isGranted && !statusAudio.isGranted) {
@@ -64,16 +65,22 @@ class LibraryPageState extends State<LibraryPage> {
       Map<Permission, PermissionStatus> statuses = await [
         Permission.storage,
         Permission.audio,
+        Permission.photos,
       ].request();
 
-      // Cek hasil
-      bool granted = statuses[Permission.storage] == PermissionStatus.granted || 
-                     statuses[Permission.audio] == PermissionStatus.granted;
+      bool isAndroid13Complete =
+          statuses[Permission.audio]!.isGranted &&
+          statuses[Permission.photos]!.isGranted;
+      bool isOldAndroidGranted = statuses[Permission.storage]!.isGranted;
 
-      if (!granted) {
+      if (!isAndroid13Complete && !isOldAndroidGranted) {
         if (mounted) {
-           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text("Aplikasi butuh izin penyimpanan untuk memutar musik!")),
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                "Aplikasi butuh izin Lagu & Foto untuk berjalan normal",
+              ),
+            ),
           );
         }
         return; // Stop di sini kalau gak dikasih izin
@@ -97,8 +104,9 @@ class LibraryPageState extends State<LibraryPage> {
           _realSongs = songs;
 
           // Update item "Downloads"
-          final downloadIndex =
-              myLibrary.indexWhere((item) => item.title == 'Downloads');
+          final downloadIndex = myLibrary.indexWhere(
+            (item) => item.title == 'Downloads',
+          );
 
           if (downloadIndex != -1) {
             var oldItem = myLibrary[downloadIndex];
@@ -291,9 +299,35 @@ class LibraryPageState extends State<LibraryPage> {
   }
 
   Widget _buildTile(LibraryItem item, bool grid) {
-    return GestureDetector(
-      behavior: HitTestBehavior.translucent,
-      onTap: () {
+    bool isActive = _activeItem == item;
+    return LibraryItem(
+      title: item.title,
+      subtitle: item.subtitle,
+      titleColor: item.titleColor,
+      iconInContainer: item.iconInContainer,
+      imagePath: item.imagePath,
+      containerGradient: item.containerGradient,
+      containerColor: item.containerColor,
+      isGrid: grid,
+
+      isPinned: item.isPinned,
+      isPinnedIcon: item.isPinned,
+      isHighlighted: isActive,
+
+      onTap: () async {
+        setState(() {
+          _activeItem = item;
+        });
+        await Future.delayed(Duration(milliseconds: 200));
+        if (mounted) {
+          setState(() {
+            _activeItem = null;
+          });
+        }
+
+        await Future.delayed(Duration(milliseconds: 100));
+        if (!mounted) return;
+        
         if (item.title == 'Downloads') {
           Navigator.push(
             context,
@@ -307,8 +341,10 @@ class LibraryPageState extends State<LibraryPage> {
         } else if (item.category == 'Playlists') {
           final playlistBox = Hive.box('Playlists');
 
-          final List<dynamic> songList =
-              playlistBox.get(item.title, defaultValue: []);
+          final List<dynamic> songList = playlistBox.get(
+            item.title,
+            defaultValue: [],
+          );
 
           List<SongModel> playlistSongs = [];
           try {
@@ -328,13 +364,19 @@ class LibraryPageState extends State<LibraryPage> {
           );
         }
       },
-      child: LibraryItemTile(
-        item: item,
-        isGridMode: grid,
-        onTogglePin: () => togglePin(item),
-        onLongPress: () =>
-            LibraryBottomSheet.show(context, item, () => togglePin(item)),
-      ),
+      onTogglePin: () => togglePin(item),
+      onLongPress: () async {
+        setState(() {
+          _activeItem = item;
+        });
+        await LibraryBottomSheet.show(context, item, () => togglePin(item));
+
+        if (mounted) {
+          setState(() {
+            _activeItem = null;
+          });
+        }
+      },
     );
   }
 }
