@@ -4,10 +4,12 @@ import 'package:percobaan/screens/search_page.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:percobaan/data/running_teks.dart';
 import 'package:marquee/marquee.dart';
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 class NowPlayingPage extends StatefulWidget {
   final List<SongModel> songs;
   final AudioPlayer player;
+  
 
   NowPlayingPage({super.key, required this.player, required this.songs});
 
@@ -26,6 +28,58 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     return "$minutes:$seconds";
   }
 
+  void _toggleFloatingLyrics() async {
+    try {
+      // 1. Cek & Minta Izin dulu (Wajib)
+      final bool status = await FlutterOverlayWindow.isPermissionGranted();
+      if (!status) {
+        final bool? result = await FlutterOverlayWindow.requestPermission();
+        if (result != true) {
+            // Jika user nolak, stop di sini
+            return; 
+        }
+      }
+
+      // 2. Cek Status Overlay
+      final bool isActive = await FlutterOverlayWindow.isActive();
+      
+      if (isActive) {
+        // Kalau Aktif -> Tutup
+        await FlutterOverlayWindow.closeOverlay();
+        if (mounted) {
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Lyrics closed"), backgroundColor: Colors.redAccent, duration: Duration(seconds: 1)),
+           );
+        }
+      } else {
+        // Kalau Mati -> Buka
+        await _showOverlayNow();
+      }
+      
+    } catch (e) {
+      print("ERROR TOGGLE OVERLAY: $e");
+    }
+  }
+
+  // --- TARUH FUNGSI INI DI BAWAH _toggleFloatingLyrics ---
+  
+  Future<void> _showOverlayNow() async {
+    try {
+      await FlutterOverlayWindow.showOverlay(
+        enableDrag: true, // Default false, nanti diatur sama LongPress di Overlay
+        overlayTitle: "Lyrics",
+        overlayContent: "Lyrics Overlay",
+        flag: OverlayFlag.defaultFlag,
+        visibility: NotificationVisibility.visibilitySecret, // Biar gakuh notif
+        positionGravity: PositionGravity.none, // Biar posisi bebas (bisa digeser)
+        height: 400, // Tinggi Mode Mini
+        width: 550,  // Lebar Mode Mini
+      );
+    } catch (e) {
+      print("Error showOverlay: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -34,7 +88,7 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
     return Dismissible(
       key: const Key('play_screen_dismiss'),
       direction: DismissDirection.down,
-      
+
       onDismissed: (direction) {
         Navigator.pop(context);
       },
@@ -124,64 +178,104 @@ class _NowPlayingPageState extends State<NowPlayingPage> {
                           ),
                         ),
 
-                        const SizedBox(height: 30),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.only(top: 10, right: 10),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              InkWell(
+                                // ==================================
+                                onTap: _toggleFloatingLyrics,
+                                borderRadius: BorderRadius.circular(50),
+                                child: Container(
+                                  padding: EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.layers,
+                                    color: Colors.tealAccent,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 10),
 
                         // JUDUL
                         // JUDUL
-Padding(
-  padding: const EdgeInsets.symmetric(horizontal: 20),
-  child: LayoutBuilder(
-    builder: (context, constraints) {
-      // 1. Definisikan Style SEKALI saja agar konsisten (Hitungan & Tampilan sama)
-      final textStyle = const TextStyle(
-        color: Colors.white,
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      );
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: LayoutBuilder(
+                            builder: (context, constraints) {
+                              // 1. Definisikan Style SEKALI saja agar konsisten (Hitungan & Tampilan sama)
+                              final textStyle = const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              );
 
-      // 2. Hitung Lebar Teks pakai displayTitle
-      final textPainter = TextPainter(
-        text: TextSpan(text: displayTitle, style: textStyle),
-        maxLines: 1,
-        textDirection: TextDirection.ltr,
-        // Wajib: Ikuti skala font HP user
-        textScaleFactor: MediaQuery.of(context).textScaleFactor, 
-      )..layout(minWidth: 0, maxWidth: double.infinity);
+                              // 2. Hitung Lebar Teks pakai displayTitle
+                              final textPainter = TextPainter(
+                                text: TextSpan(
+                                  text: displayTitle,
+                                  style: textStyle,
+                                ),
+                                maxLines: 1,
+                                textDirection: TextDirection.ltr,
+                                // Wajib: Ikuti skala font HP user
+                                textScaleFactor: MediaQuery.of(
+                                  context,
+                                ).textScaleFactor,
+                              )..layout(minWidth: 0, maxWidth: double.infinity);
 
-      // 3. LOGIKA AKURAT + BUFFER
-      // Kita kurangi lebar layar 5 pixel (-5). 
-      // Artinya: Kalau teksnya PAS-PASAN atau MEPET, anggap kepanjangan & jalankan Marquee.
-      final bool isOverflowing = textPainter.size.width > (constraints.maxWidth - 5);
+                              // 3. LOGIKA AKURAT + BUFFER
+                              // Kita kurangi lebar layar 5 pixel (-5).
+                              // Artinya: Kalau teksnya PAS-PASAN atau MEPET, anggap kepanjangan & jalankan Marquee.
+                              final bool isOverflowing =
+                                  textPainter.size.width >
+                                  (constraints.maxWidth - 5);
 
-      return SizedBox(
-        height: 30,
-        width: constraints.maxWidth, 
-        child: isOverflowing
-            ? Marquee(
-                text: displayTitle, 
-                style: textStyle,
-                scrollAxis: Axis.horizontal,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                blankSpace: 50.0,
-                velocity: 30.0,
-                pauseAfterRound: const Duration(seconds: 2),
-                startPadding: 10.0,
-                accelerationDuration: Duration.zero, 
-                decelerationDuration: const Duration(milliseconds: 500),
-              )
-            : Align( // Pakai Align/Center untuk teks diam
-                alignment: Alignment.center,
-                child: Text(
-                  displayTitle,
-                  style: textStyle, // Style harus sama persis dengan Marquee
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-      );
-    },
-  ),
-),
+                              return SizedBox(
+                                height: 30,
+                                width: constraints.maxWidth,
+                                child: isOverflowing
+                                    ? Marquee(
+                                        text: displayTitle,
+                                        style: textStyle,
+                                        scrollAxis: Axis.horizontal,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        blankSpace: 50.0,
+                                        velocity: 30.0,
+                                        pauseAfterRound: const Duration(
+                                          seconds: 2,
+                                        ),
+                                        startPadding: 10.0,
+                                        accelerationDuration: Duration.zero,
+                                        decelerationDuration: const Duration(
+                                          milliseconds: 500,
+                                        ),
+                                      )
+                                    : Align(
+                                        // Pakai Align/Center untuk teks diam
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          displayTitle,
+                                          style:
+                                              textStyle, // Style harus sama persis dengan Marquee
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                              );
+                            },
+                          ),
+                        ),
 
                         const SizedBox(height: 10),
 

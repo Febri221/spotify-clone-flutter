@@ -86,13 +86,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
           });
           return;
         }
-        const platform = MethodChannel('android/back_button');
-        try {
-          await platform.invokeMethod('minimizeApp');
-        } on PlatformException catch (e) {
-          print('Gagal minimize: "${e.message}"');
-        }
-        return;
+       SystemNavigator.pop();
       },
       child: Scaffold(
         body: IndexedStack(

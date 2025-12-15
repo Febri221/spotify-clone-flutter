@@ -1,9 +1,9 @@
+import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:flutter/foundation.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 
-// HAPUS import just_audio_background kalau ada
-// import 'package:just_audio_background/just_audio_background.dart'; 
 
 class AudioManager {
   static final AudioManager _instance = AudioManager._internal();
@@ -11,7 +11,7 @@ class AudioManager {
   AudioManager._internal();
 
   final AudioPlayer player = AudioPlayer();
-
+static const int lyricsOffset = 0;
   final ValueNotifier<SongModel?> currentSongNotifier = ValueNotifier(null);
   final ValueNotifier<bool> isPlayerExpanded = ValueNotifier(false);
 
@@ -41,6 +41,13 @@ class AudioManager {
         children: songs.map((s) {
           return AudioSource.uri(
             Uri.parse(s.uri!),
+            tag: MediaItem(
+              id: s.id.toString(),
+              album: s.album ?? 'Unknown Album',
+              title: s.title,
+              artist: s.artist ?? 'Unknown Artist',
+              duration: Duration(milliseconds: s.duration ?? 0),
+            ),
           );
         }).toList(),
       );
@@ -72,6 +79,8 @@ class AudioManager {
 
     player.positionStream.listen((p) {
       currentPositionNotifier.value = p;
+      FlutterOverlayWindow.shareData(p.inMilliseconds + lyricsOffset);
+      
     });
 
     player.currentIndexStream.listen((idx) {

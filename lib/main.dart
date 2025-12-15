@@ -6,12 +6,18 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:percobaan/screens/auth/login_page.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-
+import 'package:just_audio_background/just_audio_background.dart';
+import 'package:percobaan/screens/overlay/lyrics_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  
+  await JustAudioBackground.init(
+    androidNotificationChannelId: 'com.ryanheise.bg_demo.channel.audio',
+    androidNotificationChannelName: 'Audio playback',
+    androidNotificationOngoing: true,
+  );
+
   await Hive.initFlutter();
   await Hive.openBox('Playlists');
   
@@ -29,6 +35,13 @@ Future<void> main() async {
   runApp(MyApp());
 }
 
+@pragma("vm:entry-point")
+void overlayMain() {
+  runApp(
+    const MaterialApp(debugShowCheckedModeBanner: false,
+     home: LyricsOverlay()),
+  );
+}
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
