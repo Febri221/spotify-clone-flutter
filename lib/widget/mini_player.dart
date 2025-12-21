@@ -26,8 +26,6 @@ class MiniPlayerWidget extends StatelessWidget {
                 reverseTransitionDuration: const Duration(milliseconds: 300),
 
                 pageBuilder: (_, __, ___) => NowPlayingPage(
-                  player: AudioManager().player,
-                  songs: AudioManager().currentPlaylist,
                 ),
                 transitionsBuilder:
                     (context, animation, secondaryAnimation, child) {

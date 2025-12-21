@@ -1,11 +1,11 @@
-package com.example.percobaan // <--- BIARIN INI SESUAI ASLINYA, JANGAN UBAH BARIS INI
+package com.example.percobaan
 
-import io.flutter.embedding.android.FlutterActivity
-import io.flutter.embedding.engine.FlutterEngine // <--- Tambahan
-import io.flutter.plugin.common.MethodChannel // <--- Tambahan
+import com.ryanheise.audioservice.AudioServiceActivity // WAJIB INI
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.plugin.common.MethodChannel
 
-class MainActivity: FlutterActivity() {
-    // Kita bikin jalur komunikasi namanya "android/back_button"
+class MainActivity: AudioServiceActivity() { // WAJIB TURUNAN INI
+
     private val CHANNEL = "android/back_button"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -14,7 +14,6 @@ class MainActivity: FlutterActivity() {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler {
             call, result ->
             if (call.method == "minimizeApp") {
-                
                 this.moveTaskToBack(true)
                 result.success(true)
             } else {

@@ -11,7 +11,6 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 // Audio & Permission
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:permission_handler/permission_handler.dart'; // PENTING
 
 class LibraryPage extends StatefulWidget {
