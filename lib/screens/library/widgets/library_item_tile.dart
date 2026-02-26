@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:percobaan/screens/library/widgets/playlist_detail_page.dart';
-import 'package:percobaan/widget/library_item_class.dart';
+import 'package:percobaan/widgets/library_item_class.dart';
 
 class LibraryItemTile extends StatelessWidget {
   final LibraryItem item;
@@ -18,6 +18,12 @@ class LibraryItemTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
+    String displayTitle = item.title;
+    if (displayTitle.contains('__')) {
+      displayTitle = displayTitle.split('__')[0];
+    }
+
     return GestureDetector(
       behavior: HitTestBehavior.translucent,
       
@@ -25,7 +31,7 @@ class LibraryItemTile extends StatelessWidget {
       child: Container(
         width: double.infinity,
         child: LibraryItem( 
-          title: item.title,
+          title: displayTitle,
           imagePath: item.imagePath,
           iconInContainer: item.iconInContainer,
           containerColor: item.containerColor,

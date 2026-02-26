@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:percobaan/widget/bottom_navbar.dart';
+import 'package:percobaan/widgets/bottom_navbar.dart';
 import 'package:percobaan/screens/auth/login_page.dart';
 
 class RegisterPage extends StatefulWidget {
