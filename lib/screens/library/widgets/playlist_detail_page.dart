@@ -1,22 +1,24 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:on_audio_query/on_audio_query.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:marquee/marquee.dart';
-
+import 'package:percobaan/providers/audio_provider.dart';
+import 'package:provider/provider.dart';
 // Pastikan path import ini sesuai dengan folder kamu (services vs servicess)
-import 'package:percobaan/servicess/audio_manager.dart';
+//import 'package:percobaan/services/audio_manager.dart';
 
 class PlaylistDetailPage extends StatefulWidget {
   final String playlistTitle;
   final List<SongModel> songs;
+  final String? playlistKey;
 
   const PlaylistDetailPage({
     super.key,
     required this.playlistTitle,
     required this.songs,
+    this.playlistKey,
   });
 
   @override
@@ -47,11 +49,37 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   void playSong(int index) async {
     // Panggil fungsi play dari AudioManager
     // Fungsi ini di AudioManager kamu sudah otomatis set source, set duration, dan play.
-    await AudioManager().playPlaylist(_currentSongs, index);
+    await context.read<AudioProvider>().playPlaylist(_currentSongs, index);
 
     // Update UI biar mini player muncul
-    AudioManager().isPlayerExpanded.value = true;
+    // AudioManager().isPlayerExpanded.value = true;
+    context.read<AudioProvider>().togglePlayerExpanded();
   }
+
+
+  void _removeSong(int index) {
+    setState(() {
+      _currentSongs.removeAt(index);
+    });
+
+    // Update ke Hive jika ini playlist user (bukan Downloads/System)
+    if (widget.playlistKey != null) {
+      var box = Hive.box('Playlists');
+      
+      List<dynamic> updatedList = _currentSongs.map((e) => e.getMap).toList();
+      // Timpa data lama dengan list lagu yang baru (yang sudah dikurangi)
+      box.put(widget.playlistKey, updatedList);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Lagu dihapus dari playlist"),
+          duration: Duration(seconds: 1),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
+  }
+
 
   // --- CRUD FUNCTIONS ---
 
@@ -62,7 +90,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     // Cek Manage External Storage (Android 11+)
     if (await Permission.manageExternalStorage.request().isGranted) {
       permissionGranted = true;
-    } 
+    }
     // Fallback: Cek Storage biasa (Android 10 ke bawah)
     else if (await Permission.storage.request().isGranted) {
       permissionGranted = true;
@@ -71,16 +99,17 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     // 2. EKSEKUSI UTAMA
     if (permissionGranted) {
       try {
-        // === A. MATIKAN PLAYER DULUAN (PENTING!) ===
-        // Sebelum nyentuh file, pastiin player diem dulu.
-        final currentPlaying = AudioManager().currentSongNotifier.value;
-        
+
+        final provider = context.read<AudioProvider>();
+        final currentPlaying = provider.currentSong;
+
         // Cek apakah lagu yang mau dihapus lagi diputer?
         if (currentPlaying != null && currentPlaying.id == song.id) {
-           print("DEBUG: Lagu sedang diputar. Mematikan suara...");
-           await AudioManager().player.stop(); 
-           AudioManager().currentSongNotifier.value = null; 
-           AudioManager().isPlayerExpanded.value = false;
+          print("DEBUG: Lagu sedang diputar. Mematikan suara...");
+          provider.player.stop();
+          // await AudioManager().player.stop();
+          // AudioManager().currentSongNotifier.value = null;
+          // AudioManager().isPlayerExpanded.value = false;
         }
 
         // === B. HAPUS FILE FISIK ===
@@ -97,12 +126,11 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
           setState(() {
             _currentSongs.removeWhere((item) => item.id == song.id);
           });
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Lagu berhasil dihapus")),
           );
         }
-
       } catch (e) {
         print('ERROR saat menghapus: $e');
 
@@ -153,37 +181,47 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     );
   }
 
-  void addToPlaylist(String playlistName, SongModel song) {
-    final playlistBox = Hive.box(
-      'Playlists',
-    ); // Pastikan nama Box konsisten (Huruf Besar/Kecil)
+  void addToPlaylist(String rawPlaylistKey, SongModel song) {
+    // 1. Ambil nama asli untuk TAMPILAN (Hapus __angka)
+    String displayName = rawPlaylistKey;
+    if (rawPlaylistKey.contains('__')) {
+      displayName = rawPlaylistKey.split('__')[0];
+    }
+
+    final playlistBox = Hive.box('Playlists'); 
+    
+    // 2. Ambil data pakai KEY ASLI (tetap pakai rawPlaylistKey buat database)
     List<dynamic> currentSongs = playlistBox.get(
-      playlistName,
+      rawPlaylistKey,
       defaultValue: [],
     );
 
-    // Cek duplikasi ID biar gak double
-    // Note: SongModel.getMap mengembalikan Map, jadi akses pake ['_id'] atau id
+    // Cek duplikasi
     bool exists = currentSongs.any((s) {
-      // Handle kalo s itu Map atau SongModel object (Hive kadang tricky)
       if (s is Map) return s['_id'] == song.id || s['id'] == song.id;
       return false;
     });
 
     if (!exists) {
       currentSongs.add(song.getMap);
-      playlistBox.put(playlistName, currentSongs);
+      // Simpan ke DB pakai KEY ASLI
+      playlistBox.put(rawPlaylistKey, currentSongs); 
+      
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Ditambahkan ke $playlistName"),
+          // Tampilkan nama yang sudah bersih
+          content: Text("Ditambahkan ke $displayName"), 
           backgroundColor: Colors.green,
+          duration: const Duration(seconds: 1),
         ),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("Lagu sudah ada di playlist $playlistName"),
+          // Tampilkan nama yang sudah bersih
+          content: Text("Lagu sudah ada di playlist $displayName"),
           backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 1),
         ),
       );
     }
@@ -216,13 +254,27 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                 : ListView.builder(
                     itemCount: playlists.length,
                     itemBuilder: (context, index) {
+                      final String rawKey = playlists[index];
+
+                      String displayName = rawKey;
+                      if (rawKey.contains('__')) {
+                        displayName = rawKey.split('__')[0];
+                      }
+
+                      if (displayName == "Downloads" ||
+                          displayName == "Liked Songs" ||
+                          displayName == "New Episodes" ||
+                          displayName == "Your Episodes") {
+                        return const SizedBox.shrink(); // Skip system playlists
+                      }
+
                       return ListTile(
                         title: Text(
-                          playlists[index],
+                          displayName,
                           style: const TextStyle(color: Colors.white),
                         ),
                         onTap: () {
-                          addToPlaylist(playlists[index], song);
+                          addToPlaylist(rawKey, song);
                           Navigator.pop(context);
                         },
                       );
@@ -270,10 +322,10 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                 final song = _currentSongs[index];
 
                 // ValueListenableBuilder mendengarkan AudioManager global
-                return ValueListenableBuilder<SongModel?>(
-                  valueListenable: AudioManager().currentSongNotifier,
-                  builder: (context, currentPlayingSong, child) {
-                    final bool isSelected = currentPlayingSong?.id == song.id;
+                return Selector<AudioProvider, int?>(
+                  selector: (_, provider) => provider.currentSong?.id,
+                  builder: (context, currentSongId,ild) {
+                    final bool isSelected = currentSongId == song.id;
                     final textColor = isSelected ? Colors.green : Colors.white;
 
                     return ListTile(
@@ -375,6 +427,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                           if (value == 'playlist')
                             showAddToPlaylistDialog(song);
                           if (value == 'delete') showDeleteDialog(song);
+                          if (value == 'remove') _removeSong(index);
                         },
                         itemBuilder: (context) => [
                           const PopupMenuItem(
@@ -390,6 +443,15 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                               child: Text(
                                 "Hapus File",
                                 style: TextStyle(color: Colors.red),
+                              ),
+                            ),
+
+                            if (widget.playlistKey != null) 
+                            const PopupMenuItem(
+                              value: 'remove',
+                              child: Text(
+                                "Hapus dari Playlist",
+                                style: TextStyle(color: Colors.orangeAccent),
                               ),
                             ),
                         ],

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:percobaan/screens/auth/register_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:percobaan/widget/bottom_navbar.dart';
+import 'package:percobaan/widgets/bottom_navbar.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});

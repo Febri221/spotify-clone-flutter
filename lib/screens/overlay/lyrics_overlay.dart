@@ -10,15 +10,12 @@ class LyricsOverlay extends StatefulWidget {
 }
 
 class _LyricsOverlayState extends State<LyricsOverlay> {
-  final double widthWindow = 450;
+  final PageController _pageController = PageController(viewportFraction: 0.35);
 
   StreamSubscription? _listener;
   int currentIndex = 0;
   bool isTouching = false;
-
-  // --- PERBAIKAN 1: HAPUS 'final' DI SINI ---
-  // Biar variabel ini bisa diisi ulang pas ganti lagu
-  List<Map<String, dynamic>> lyrics = []; 
+  List<Map<String, dynamic>> lyrics = [];
 
   @override
   void initState() {
@@ -27,20 +24,32 @@ class _LyricsOverlayState extends State<LyricsOverlay> {
       if (data is int) {
         _syncLyrics(data);
       } else if (data is List) {
-        try  {
-          // Parsing data dari List dynamic ke List Map
+        try {
           final newLyrics = List<Map<String, dynamic>>.from(
             data.map((item) => Map<String, dynamic>.from(item)),
           );
-          
-          setState(() {
-            // --- PERBAIKAN 2: HAPUS 'final' DI SINI ---
-            // Langsung timpa variabel utama, jangan bikin variabel baru!
-            lyrics = newLyrics; 
-            currentIndex = 0;
-          });
+
+          if (mounted) {
+            bool isSameSong = false;
+            if (lyrics.isNotEmpty && newLyrics.isNotEmpty) {
+              if (lyrics.length == newLyrics.length &&
+                  lyrics[0]['text'] == newLyrics[0]['text']) {
+                isSameSong = true;
+              }
+            }
+
+            setState(() {
+              lyrics = newLyrics;
+              if (!isSameSong) {
+                currentIndex = 0;
+                if (_pageController.hasClients) {
+                  _pageController.jumpToPage(0);
+                }
+              }
+            });
+          }
         } catch (e) {
-          print('Error parsing lyrics: $e');
+          debugPrint('Error parsing lyrics: $e');
         }
       }
     });
@@ -49,12 +58,12 @@ class _LyricsOverlayState extends State<LyricsOverlay> {
   @override
   void dispose() {
     _listener?.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
   void _syncLyrics(int position) {
-    // Cegah crash kalau lirik masih kosong
-    if (lyrics.isEmpty) return; 
+    if (lyrics.isEmpty) return;
 
     int newIndex = 0;
     for (int i = 0; i < lyrics.length; i++) {
@@ -65,121 +74,140 @@ class _LyricsOverlayState extends State<LyricsOverlay> {
       }
     }
 
-    if (newIndex != currentIndex) {
-      setState(() {
-        currentIndex = newIndex;
-      });
+    if (newIndex < currentIndex) {
+      final int currentLyricStartTime = lyrics[currentIndex]['time'];
+      final int diff = currentLyricStartTime - position;
+      if (diff < 1500) return;
     }
-  }
 
-  String getLyricSafe(int index) {
-    if (index >= 0 && index < lyrics.length) {
-      return lyrics[index]['text'];
+    if (newIndex == currentIndex) return;
+
+    setState(() {
+      currentIndex = newIndex;
+    });
+
+    if (_pageController.hasClients) {
+      int diffIndex = (newIndex - currentIndex).abs();
+      if (diffIndex > 2) {
+        _pageController.jumpToPage(newIndex);
+      } else {
+        _pageController.animateToPage(
+          newIndex,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOutCubic,
+        );
+      }
     }
-    return "";
-  }
-
-  Widget _buildAnimatedText(String text, TextStyle style) {
-    return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 600),
-      switchInCurve: Curves.easeInOutCubic,
-      switchOutCurve: Curves.easeInOutCubic,
-      layoutBuilder: (Widget? currentChild, List<Widget> previousChildren) {
-        return Stack(
-          alignment: Alignment.center,
-          children: <Widget>[
-            ...previousChildren,
-            if (currentChild != null) currentChild,
-          ],
-        );
-      },
-      transitionBuilder: (Widget child, Animation<double> animation) {
-        final bool isNewText = (child.key as ValueKey<String>).value == text;
-        final offsetAnimation = Tween<Offset>(
-          begin: isNewText ? const Offset(0.0, 1.0) : const Offset(0.0, -1.0),
-          end: Offset.zero,
-        ).animate(animation);
-
-        return FadeTransition(
-          opacity: animation,
-          child: SlideTransition(position: offsetAnimation, child: child),
-        );
-      },
-      child: Container(
-        width: widthWindow,
-        key: ValueKey<String>(text),
-        child: Text(
-          text,
-          textAlign: TextAlign.center,
-          style: style,
-        ),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: Listener(
-        onPointerDown: (_) => setState(() => isTouching = true),
-        onPointerUp: (_) => setState(() => isTouching = false),
-        onPointerCancel: (_) => setState(() => isTouching = false),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          // Ambil lebar window (misal 550)
+          final double overlayWidth = constraints.maxWidth;
 
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          decoration: BoxDecoration(
-            color: isTouching
-                ? Colors.black.withOpacity(0.9)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(20),
-          ),
+          return Listener(
+            onPointerDown: (_) => setState(() => isTouching = true),
+            onPointerUp: (_) => setState(() => isTouching = false),
+            onPointerCancel: (_) => setState(() => isTouching = false),
 
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildAnimatedText(
-                  getLyricSafe(currentIndex - 1),
-                  const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                    height: 1.0,
-                  ),
-                ),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: isTouching
+                    ? Colors.black.withOpacity(0.9)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+              ),
 
-                const SizedBox(height: 16),
+              child: lyrics.isEmpty
+                  ? const SizedBox()
+                  : PageView.builder(
+                      controller: _pageController,
+                      scrollDirection: Axis.vertical,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: lyrics.length,
+                      itemBuilder: (context, index) {
+                        final bool isActive = index == currentIndex;
+                        final String textContent = lyrics[index]['text'] ?? "";
 
-                _buildAnimatedText(
-                  getLyricSafe(currentIndex),
-                  const TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.bold,
-                    height: 1.0,
-                  ),
-                ),
+                        return Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          alignment: Alignment.center,
 
-                const SizedBox(height: 16),
+                          // 1. EFEK PUDAR
+                          child: AnimatedOpacity(
+                            duration: const Duration(milliseconds: 500),
+                            opacity: isActive ? 1.0 : 0.5,
 
-                _buildAnimatedText(
-                  getLyricSafe(currentIndex + 1),
-                  const TextStyle(
-                    color: Colors.white60,
-                    fontSize: 13,
-                    fontWeight: FontWeight.normal,
-                    height: 1.0,
-                  ),
-                ),
-              ],
+                            // 2. EFEK MENGECIL (Scale)
+                            child: AnimatedScale(
+                              duration: const Duration(milliseconds: 400),
+                              scale: isActive ? 1.0 : 0.85,
+                              curve: Curves.easeOutBack,
+
+                              // 3. SAFETY NET (FittedBox)
+                              child: FittedBox(
+                                fit: BoxFit.scaleDown,
+                                alignment: Alignment.center,
+
+                                child: Container(
+                                  // Constraint Lebar (Biar turun baris)
+                                  constraints: BoxConstraints(
+                                    maxWidth: overlayWidth - 20,
+                                  ),
+
+                                  // 4. ANTI LOMPAT (Stack Ghost Text)
+                                  child: Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      // LAYER A: GHOST TEXT (HANTU)
+                                      Text(
+                                        textContent,
+                                        textAlign: TextAlign.center,
+                                        style: const TextStyle(
+                                          color: Colors.transparent, // Gak kelihatan
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.2,
+                                        ),
+                                      ),
+
+                                      // LAYER B: REAL TEXT (ASLI)
+                                      AnimatedDefaultTextStyle(
+                                        duration: const Duration(
+                                          milliseconds: 300,
+                                        ),
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                          height: 1.2,
+                                          fontFamily: 'Roboto',
+                                        ),
+                                        textAlign: TextAlign.center,
+                                        child: Text(
+                                          textContent,
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
