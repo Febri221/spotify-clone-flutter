@@ -5,12 +5,13 @@ import 'package:percobaan/providers/song_provider.dart';
 import 'package:percobaan/widgets/bottom_navbar.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:percobaan/screens/auth/login_page.dart';
+import 'package:percobaan/screens/auth/login_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:percobaan/screens/overlay/lyrics_overlay.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
+import '../screens/auth/onboarding_screen.dart';
 
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -83,7 +84,7 @@ class MyApp extends StatelessWidget {
         // LOGIC NOTE: Kamu punya AuthWrapper tapi gak dipake di sini?
         // Harusnya home: AuthWrapper() kalau mau cek login otomatis.
         // Tapi kalau emang mau SplashScreen dulu, pastikan SplashScreen punya navigasi.
-        home: BottomNavbar(),
+        home: OnboardingScreen(),
       ),
     );
   }

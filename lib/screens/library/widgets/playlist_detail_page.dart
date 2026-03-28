@@ -8,6 +8,8 @@ import 'package:percobaan/providers/audio_provider.dart';
 import 'package:provider/provider.dart';
 // Pastikan path import ini sesuai dengan folder kamu (services vs servicess)
 //import 'package:percobaan/services/audio_manager.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class PlaylistDetailPage extends StatefulWidget {
   final String playlistTitle;
@@ -36,6 +38,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
   void initState() {
     super.initState();
     _currentSongs = List.from(widget.songs);
+
+    searchDataSong();
   }
 
   @override
@@ -43,6 +47,40 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     // HAPUS: _player.dispose();
     // Jangan dispose player global di sini, nanti musik mati pas back.
     super.dispose();
+  }
+
+    Future<void> searchDataSong() async {
+    //ambil data dari API
+    final url = Uri.parse('https://jann-undeclaiming-unrhythmically.ngrok-free.dev/api/lagu');
+
+    
+    //response dari API
+    try{
+      
+      final response = await http.get(url);
+      if (response.statusCode == 200) {
+        final List dataLagu = json.decode(response.body);
+        print('Mantap bro $dataLagu');
+
+        List<SongModel> songFromServer = dataLagu.map((item) {
+          return SongModel ({
+            "_id":item['id'],
+            "title":item['judul'],
+            "artist":item['artis'], "_data":item['url_lagu'],
+            "duration": 0,
+          });
+        }).toList();
+
+        setState(() {
+          _currentSongs = songFromServer;
+        });
+        
+      } else {
+        print('Duh gagal ngambil data ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Dapurnya kacau $e');
+    }
   }
 
   // --- LOGIC AUDIO (FIXED) ---

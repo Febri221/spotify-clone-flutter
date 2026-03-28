@@ -189,7 +189,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
               const Center(child: CircularProgressIndicator()),
 
             if (currentSong != null)
-              LyiricsScreen(currentSong: currentSong)
+              LyricsScreen(currentSong: currentSong)
             else
               const SizedBox(),
           ],

@@ -31,11 +31,11 @@ class AudioProvider with ChangeNotifier {
   late Stream<PositionData> _positionDataStream;
 
   PositionData get currentPositionData => PositionData(
-        player.position,
-        player.bufferedPosition,
-        player.duration ?? Duration.zero,
-      );
-      
+    player.position,
+    player.bufferedPosition,
+    player.duration ?? Duration.zero,
+  );
+
   bool _isSetup = false;
 
   AudioProvider() {
@@ -76,46 +76,43 @@ class AudioProvider with ChangeNotifier {
       FlutterOverlayWindow.shareData(event.position.inMilliseconds);
     });
   }
-  
- 
 
   void _attachListeners() {
     if (_isSetup) return;
     _isSetup = true;
 
     _player.currentIndexStream.listen((index) {
-        if (index != null && _playlist.isNotEmpty && index < _playlist.length) {
-            _currentSong = _playlist[index];
-            notifyListeners();
-        }
+      if (index != null && _playlist.isNotEmpty && index < _playlist.length) {
+        _currentSong = _playlist[index];
+        notifyListeners();
+      }
     });
 
     _player.playerStateStream.listen((playerState) {
-        final isPlayingNow = playerState.playing;
-        final processingState = playerState.processingState;
+      final isPlayingNow = playerState.playing;
+      final processingState = playerState.processingState;
 
-        if (_isPlaying != isPlayingNow) {
-            _isPlaying = isPlayingNow;
-            notifyListeners();
-        }
+      if (_isPlaying != isPlayingNow) {
+        _isPlaying = isPlayingNow;
+        notifyListeners();
+      }
 
-        if (processingState == ProcessingState.completed) {
-            _isPlaying = false;
-            _player.seek(Duration.zero);
-            _player.pause();
-            notifyListeners();
-        }
+      if (processingState == ProcessingState.completed) {
+        _isPlaying = false;
+        _player.seek(Duration.zero);
+        _player.pause();
+        notifyListeners();
+      }
     });
 
     _player.sequenceStateStream.listen((sequenceState) {
-        if (sequenceState?.currentSource == null) return;
+      if (sequenceState?.currentSource == null) return;
 
-        final item = sequenceState!.currentSource!.tag as MediaItem;
+      final item = sequenceState!.currentSource!.tag as MediaItem;
 
-        _fetchAndSendLyrics(item.artist ?? "unkown", item.title);
+      _fetchAndSendLyrics(item.artist ?? "unkown", item.title);
     });
   }
-  
 
   Future<void> playPlaylist(List<SongModel> songs, int index) async {
     _playlist = songs;
@@ -126,79 +123,90 @@ class AudioProvider with ChangeNotifier {
     _attachListeners();
 
     try {
-        final playlistSource = ConcatenatingAudioSource(
-            children: songs.map((s) {
-                return AudioSource.uri(
-                    Uri.parse(s.uri!),
-                    tag: MediaItem(
-                        id: s.id.toString(),
-                    title: s.title,
-                    artist: s.artist ?? "Unknown Artist",
-                    album: s.album ?? "Unkown Album",
-                    artUri: null,
-                    duration: Duration(milliseconds: s.duration ?? 0),
-                    ),
-                );
-            }).toList()
-            );
+      final playlistSource = ConcatenatingAudioSource(
+        children: songs.map((s) {
+          String pathAtauUrl = s.data;
+         // String pathAuthUrlMatang = pathAtauUrl;
+            String pathAuthUrlMatang = pathAtauUrl;
 
-            await _player.setAudioSource(playlistSource, initialIndex: index);
-            _player.play();
+            if (pathAtauUrl.contains('/lagu/')) {
+    // Cari index posisi tulisan '/lagu/'
+    int startIdx = pathAtauUrl.indexOf('/lagu/');
+    
+    // Ambil sisa tulisan di belakangnya (misal: '/lagu/lany_xxl.mp3')
+    String sisaUrl = pathAtauUrl.substring(startIdx);
+    
+    // Gabungin paksa!
+    pathAuthUrlMatang = 'https://jann-undeclaiming-unrhythmically.ngrok-free.dev$sisaUrl';
+}
+          
+          
+          print('DEBUG FINAL: URL Mateng =$pathAuthUrlMatang');
+          
+          // ONLINE / OFFLINE
+          final Uri audioUri = pathAuthUrlMatang.startsWith('http')
+              ? Uri.parse(pathAuthUrlMatang)
+              : Uri.file(pathAuthUrlMatang);
+
+          final Map<String, String>? myHeaders = pathAuthUrlMatang.startsWith('http')
+          ? {
+            "ngrok-skip-browser-warning": "true",
+                  "User-Agent": "MerakiApp/1.0",
+          } : null;
+
+          return AudioSource.uri(
+            audioUri,
+            headers: myHeaders,
+            tag: MediaItem(
+              id: s.id.toString(),
+              title: s.title,
+              artist: s.artist ?? "Unknown Artist",
+              album: s.album ?? "Unkown Album",
+              artUri: null,
+              duration: Duration(milliseconds: s.duration ?? 0),
+            ),
+          );
+        }).toList(),
+      );
+
+      await _player.setAudioSource(playlistSource, initialIndex: index);
+      _player.play();
     } catch (e) {
-        debugPrint ('Audio Error: $e');
+      debugPrint('Audio Error: $e');
     }
   }
 
-    void pause() => _player.pause();
-    void resume() => _player.play();
-    void seek(Duration position) => _player.seek(position);
+  void pause() => _player.pause();
+  void resume() => _player.play();
+  void seek(Duration position) => _player.seek(position);
 
-    void togglePlayerExpanded() {
-        _isPlayerExpanded = !_isPlayerExpanded;
-        notifyListeners();
+  void togglePlayerExpanded() {
+    _isPlayerExpanded = !_isPlayerExpanded;
+    notifyListeners();
+  }
+
+  void togglePlay() {
+    if (_isPlaying) {
+      _player.pause();
+    } else {
+      _player.play();
     }
+  }
 
-    void togglePlay() {
-        if (_isPlaying) {
-            _player.pause();
-        } else {
-            _player.play();
-        }
+  Future<void> _fetchAndSendLyrics(String artis, String title) async {
+    String rawLrc = await LyricsManager.getLyrics(artis, title);
+    List<Map<String, dynamic>> overlayData = [];
+
+    if (rawLrc.isNotEmpty) {
+      overlayData = LyricsManager.parseLrc(rawLrc);
+    } else {
+      overlayData = [
+        {'time': 0, 'text': 'Lirik belum tersedia'},
+        {'time': 5000, 'text': 'Request yee kalo mau :)'},
+      ];
     }
-
-    Future<void> _fetchAndSendLyrics(String artis, String title) async {
-        String rawLrc = await LyricsManager.getLyrics(artis, title);
-        List<Map<String, dynamic>> overlayData = [];
-
-        if (rawLrc.isNotEmpty) {
-            overlayData = LyricsManager.parseLrc(rawLrc);
-        } else {
-            overlayData = [
-                {'time': 0, 'text': 'Lirik belum tersedia'},
-          {'time': 5000, 'text': 'Request yee kalo mau :)'}
-            ];
-        }
-        await FlutterOverlayWindow.shareData(overlayData);
-    }
-
-  //   List<Map<String, dynamic>> _convertLrcToList(String lrcContent) {
-  //   List<Map<String, dynamic>> output = [];
-  //   final RegExp regex = RegExp(r'^\[(\d{2}):(\d{2})\.(\d{2})\](.*)');
-  //   final lines = lrcContent.split('\n');
-  //   for (var line in lines) {
-  //     final match = regex.firstMatch(line);
-  //     if (match != null) {
-  //       final int minutes = int.parse(match.group(1)!);
-  //       final int seconds = int.parse(match.group(2)!);
-  //       final int milliseconds = int.parse(match.group(3)!);
-  //       final String text = match.group(4)!.trim();
-  //       final int totalTime =
-  //           (minutes * 60 * 1000) + (seconds * 1000) + (milliseconds * 10);
-  //       output.add({'time': totalTime, 'text': text});
-  //     }
-  //   }
-  //   return output;
-  // }
+    await FlutterOverlayWindow.shareData(overlayData);
+  }
 
   @override
   void dispose() {

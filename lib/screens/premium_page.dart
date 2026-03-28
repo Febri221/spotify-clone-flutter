@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:percobaan/screens/auth/login_page.dart';
+import 'package:percobaan/screens/auth/login_screen.dart';
 
 class PremiumPage extends StatefulWidget {
   const PremiumPage({super.key});

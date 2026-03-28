@@ -55,6 +55,8 @@ dependencies:
   ota_update: ^7.1.0
   flutter_native_splash: ^2.4.7
   provider: ^6.1.5+1
+  flutter_svg: ^2.2.4
+  smooth_page_indicator: ^2.0.1
 
 dev_dependencies:
   flutter_test:
@@ -116,6 +118,7 @@ flutter:
     - images/nnaruto.jpeg
     - images/febri.jpg
     - images/mini_dragon.jpg
+    - images/
     - assets/icon/
 
   # An image asset can refer to one or more resolution-specific "variants", see
@@ -129,12 +132,15 @@ flutter:
   # "family" key with the font family name, and a "fonts" key with a
   # list giving the asset and other descriptors for the font. For
   # example:
-  # fonts:
-  #   - family: Schyler
-  #     fonts:
-  #       - asset: fonts/Schyler-Regular.ttf
-  #       - asset: fonts/Schyler-Italic.ttf
-  #         style: italic
+  fonts:
+    - family: poppins
+      fonts:
+        - asset: fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: fonts/Poppins-Regular.ttf
+          weight: 400
+        # - asset: fonts/Schyler-Italic.ttf
+          # style: italic
   #   - family: Trajan Pro
   #     fonts:
   #       - asset: fonts/TrajanPro.ttf

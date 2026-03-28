@@ -17,12 +17,11 @@ class LyricsManager {
     try {
       // 2. AMBIL DAFTAR SEMUA FILE LIRIK DI FOLDER ASSETS
       // Kita "ngintip" isi folder assets/lyrics/ lewat AssetManifest
-      final manifestContent = await rootBundle.loadString('AssetManifest.json');
-      final Map<String, dynamic> manifestMap = json.decode(manifestContent);
+      final AssetManifest assetManifest = await AssetManifest.loadFromAssetBundle(rootBundle);
 
       // Ambil file yang akhiran .lrc aja
-      final lrcFiles = manifestMap.keys
-          .where((key) => key.contains('assets/lyrics/') && key.endsWith('.lrc'))
+      final List<String> lrcFiles = assetManifest.listAssets()
+          .where((String key) => key.contains('assets/lyrics/') && key.endsWith('.lrc'))
           .toList();
 
       // 3. LOGIKA DETEKTIF (LOOPING PINTAR)

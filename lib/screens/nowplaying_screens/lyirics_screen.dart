@@ -4,16 +4,16 @@ import 'package:scrollable_positioned_list/scrollable_positioned_list.dart';
 import 'package:percobaan/providers/audio_provider.dart';
 import 'package:percobaan/data/database_lyrics.dart/lyrics_manager.dart';
 
-class LyiricsScreen extends StatefulWidget {
+class LyricsScreen extends StatefulWidget {
   final dynamic currentSong; // Data lagu yang lagi diputar
 
-  const LyiricsScreen({super.key, required this.currentSong});
+  const LyricsScreen({super.key, required this.currentSong});
 
   @override
-  State<LyiricsScreen> createState() => _LyricsPageState();
+  State<LyricsScreen> createState() => _LyricsPageState();
 }
 
-class _LyricsPageState extends State<LyiricsScreen>
+class _LyricsPageState extends State<LyricsScreen>
     with AutomaticKeepAliveClientMixin {
   List<Map<String, dynamic>> _lyrics = [];
   bool _isLoading = true;
@@ -36,7 +36,7 @@ class _LyricsPageState extends State<LyiricsScreen>
   }
 
   @override
-  void didUpdateWidget(covariant LyiricsScreen oldWidget) {
+  void didUpdateWidget(covariant LyricsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Kalau lagu ganti, muat ulang liriknya
     if (widget.currentSong.id != oldWidget.currentSong.id) {
