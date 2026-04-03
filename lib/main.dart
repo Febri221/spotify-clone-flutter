@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:percobaan/providers/audio_provider.dart';
 import 'package:percobaan/providers/playlist_provider.dart';
 import 'package:percobaan/providers/song_provider.dart';
-import 'package:percobaan/widgets/bottom_navbar.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:percobaan/screens/auth/login_screen.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import 'package:percobaan/screens/overlay/lyrics_overlay.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
-import '../screens/auth/onboarding_screen.dart';
+import 'package:percobaan/auth_wrapper.dart';
 
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -56,7 +53,9 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AudioProvider()),
-        ChangeNotifierProvider(create: (_) => SongProvider()..fetchGlobalSongs()),
+        ChangeNotifierProvider(
+          create: (_) => SongProvider()..fetchGlobalSongs(),
+        ),
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
       ],
       child: MaterialApp(
@@ -67,11 +66,19 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           scaffoldBackgroundColor: Colors.black,
           canvasColor: Colors.black,
-          dialogBackgroundColor: Colors.black,
-          cardColor: Colors.black,
+          dialogBackgroundColor: Colors.grey.shade900,
+          cardColor: Colors.grey.shade900,
           colorScheme: ColorScheme.dark(
             primary: Colors.black,
-            secondary: Colors.black,
+            secondary: Colors.grey,
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            enabledBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+            ),
+            focusedBorder: UnderlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey.shade800),
+            ),
           ),
           useMaterial3: true,
           pageTransitionsTheme: PageTransitionsTheme(
@@ -84,29 +91,8 @@ class MyApp extends StatelessWidget {
         // LOGIC NOTE: Kamu punya AuthWrapper tapi gak dipake di sini?
         // Harusnya home: AuthWrapper() kalau mau cek login otomatis.
         // Tapi kalau emang mau SplashScreen dulu, pastikan SplashScreen punya navigasi.
-        home: OnboardingScreen(),
+        home: AuthWrapper(),
       ),
-    );
-  }
-}
-
-class AuthWrapper extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            body: Center(child: CircularProgressIndicator(color: Colors.green)),
-          );
-        }
-        if (snapshot.hasData) {
-          return BottomNavbar();
-        }
-        return LoginPage();
-      },
     );
   }
 }

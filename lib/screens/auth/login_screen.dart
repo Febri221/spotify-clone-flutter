@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:percobaan/screens/auth/sign_up_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:percobaan/widgets/bottom_navbar.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter_svg/svg.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -13,6 +15,7 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  bool _isobscure = true;
 
   Future<void> loginUser() async {
     final email = _emailController.text.trim();
@@ -52,96 +55,174 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: false,
-      backgroundColor: Color(0xFF191414),
-      body: Center(
+      resizeToAvoidBottomInset: true,
+      backgroundColor: Colors.white,
+      body: SingleChildScrollView(
+        scrollDirection: Axis.vertical,
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Container(
-              width: 250,
-              height: 50,
-              decoration: BoxDecoration(),
-              child: TextField(
-                controller: _emailController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Email',
-                  hintStyle: TextStyle(color: Colors.grey.shade800),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide(color: Colors.grey),
+            SafeArea(
+              child: Column(
+                children: <Widget>[
+                  SizedBox(height: 100),
+
+                  SvgPicture.asset(
+                    'images/undraw_login_weas.svg',
+                    width: 232,
+                    height: 238,
                   ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide(color: Colors.green, width: 2),
+                  SizedBox(height: 20.74),
+                  Container(
+                    child: Column(
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(left: 20.55),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Login',
+                                    style: TextStyle(
+                                      color: Colors.black,
+                                      fontSize: 24,
+                                      fontFamily: 'Poppins',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              SizedBox(height: 23.11),
+                              RichText(
+                                text: TextSpan(
+                                  text: 'Belum punya akun? ',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 11.55,
+                                    fontFamily: 'Poppins',
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                  children: [
+                                    TextSpan(
+                                      text: 'Daftar',
+                                      style: TextStyle(
+                                        color: Color(0xff0D3995),
+                                        fontSize: 11.55,
+                                        fontFamily: 'Poppins',
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                      recognizer: TapGestureRecognizer()
+                                        ..onTap = () {
+                                          Navigator.pushReplacement(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => SignUpScreen(),
+                                            ),
+                                          );
+                                        },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: 22.63),
+                            ],
+                          ),
+                        ),
+                        Container(
+                          child: SizedBox(
+                            width: 343.64,
+                            child: TextField(
+                              controller: _emailController,
+                              style: TextStyle(color: Colors.black),
+                              decoration: InputDecoration(
+                                contentPadding: EdgeInsets.symmetric(
+                                  vertical: 16,
+                                ),
+                                hintText: 'Email',
+                                hintStyle: TextStyle(
+                                  color: Colors.grey.shade800,
+                                ),
+                                enabledBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey),
+                                ),
+                                focusedBorder: UnderlineInputBorder(
+                                  borderSide: BorderSide(color: Colors.grey.shade800),
+                                ),
+                                icon: Icon(
+                                  Icons.email_outlined,
+                                  color: Color(0xff000000),
+                                  size: 24,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                       
+                        SizedBox(height: 12.95),
+                        Container(
+                          width: 343.64,
+                          child: TextField(
+                            obscureText: _isobscure,
+                            controller: _passwordController,
+                            style: TextStyle(color: Colors.black),
+                            decoration: InputDecoration(
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 16,
+                              ),
+                              hintText: 'Password',
+                              suffixIcon: IconButton(onPressed: () {
+                                setState(() {
+                                  _isobscure = !_isobscure;
+                                });
+                              }, icon: Icon(_isobscure ? Icons.visibility_off : Icons.visibility),color: Colors.black,
+                              ),
+                              hintStyle: TextStyle(color: Colors.grey.shade800),
+                              enabledBorder: UnderlineInputBorder(
+                                borderSide: BorderSide(color: Colors.grey),
+                              ),
+                              icon: Icon(
+                                Icons.lock_outlined,
+                                color: Color(0xff000000),
+                                size: 24,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 144.72),
+                      ],
+                    ),
                   ),
-                  prefixIcon: Icon(Icons.email, color: Colors.grey),
-                ),
+
+                  ElevatedButton(
+                    onPressed: loginUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black87,
+                      minimumSize: Size(345, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(5),
+                      ),
+                    ),
+                    child: Text(
+                      'Login',
+                      style: TextStyle(color: Colors.white, fontSize: 19),
+                    ),
+                  ),
+                  SizedBox(height: 30),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Already have an account?',
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ),
-            SizedBox(height: 15.0),
-            Container(
-              width: 250,
-              height: 50,
-              decoration: BoxDecoration(),
-              child: TextField(
-                obscureText: true,
-                controller: _passwordController,
-                style: TextStyle(color: Colors.white),
-                decoration: InputDecoration(
-                  hintText: 'Password',
-                  hintStyle: TextStyle(color: Colors.grey.shade800),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(25),
-                    borderSide: BorderSide(color: Colors.green, width: 2),
-                  ),
-                  prefixIcon: Icon(Icons.key_rounded, color: Colors.grey),
-                ),
-              ),
-            ),
-            SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: loginUser,
-              child: Text('Login', style: TextStyle(color: Colors.white, fontSize: 18)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                minimumSize: Size(150, 50),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(25),
-                ),
-              ),
-            ),
-          
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  'Don\'t have an Account?',
-                  style: TextStyle(color: Colors.white),
-                ),
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => RegisterPage()),
-                      );
-                    });
-                  },
-                  child: Text(
-                    'Register',
-                    style: TextStyle(color: Colors.green),
-                  ),
-                ),
-              ],
             ),
           ],
-
         ),
       ),
     );
