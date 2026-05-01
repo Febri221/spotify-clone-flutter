@@ -8,8 +8,6 @@ buildscript {
     }
 }
 
-
-
 allprojects {
     repositories {
         google()
@@ -27,6 +25,30 @@ subprojects {
     val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
     project.layout.buildDirectory.value(newSubprojectBuildDir)
 }
+
+// 1. Injeksi Namespace & Paksa Kompiler ke Versi 17
+subprojects {
+    afterEvaluate {
+        val android = extensions.findByName("android") as? com.android.build.gradle.BaseExtension
+        if (android != null) {
+            // Suntik Namespace
+            if (android.namespace == null || android.namespace == "unspecified") {
+                android.namespace = "com.example.percobaan.${project.name.replace("-", "_")}"
+            }
+            
+            // Paksa Java ke versi 17
+            android.compileOptions.sourceCompatibility = JavaVersion.VERSION_17
+            android.compileOptions.targetCompatibility = JavaVersion.VERSION_17
+        }
+    }
+
+    // Paksa Kotlin ke versi 17
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        kotlinOptions.jvmTarget = "17"
+    }
+}
+
+// 2. Evaluasi project
 subprojects {
     project.evaluationDependsOn(":app")
 }

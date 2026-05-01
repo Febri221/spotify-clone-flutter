@@ -9,6 +9,7 @@ import 'package:percobaan/screens/overlay/lyrics_overlay.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 import 'package:percobaan/auth_wrapper.dart';
+import 'package:percobaan/providers/asd.dart';
 
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +58,7 @@ class MyApp extends StatelessWidget {
           create: (_) => SongProvider()..fetchGlobalSongs(),
         ),
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
+        ChangeNotifierProvider(create: (_) => AuthGoogleProvider()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,

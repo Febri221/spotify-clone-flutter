@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:percobaan/auth_wrapper.dart';
 import 'package:percobaan/widgets/bottom_navbar.dart';
 import 'package:percobaan/screens/auth/login_screen.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter/gestures.dart';
+import 'package:percobaan/providers/asd.dart';
+import 'package:provider/provider.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -65,11 +68,6 @@ class _MyWidgetState extends State<SignUpScreen> {
       );
 
       _showMessage('Akun berhasil dibuat');
-
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => BottomNavbar()),
-      );
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
         _showMessage('Email sudah digunakan');
@@ -95,6 +93,11 @@ class _MyWidgetState extends State<SignUpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authGoogleProvider = Provider.of<AuthGoogleProvider>(
+      context,
+      listen: false,
+    );
+
     return Scaffold(
       resizeToAvoidBottomInset: true,
       backgroundColor: Colors.white,
@@ -171,84 +174,112 @@ class _MyWidgetState extends State<SignUpScreen> {
                             ],
                           ),
                         ),
-                        Container(
-                          child: SizedBox(
-                            width: 343.64,
-                            child: TextField(
-                              controller: _emailController,
-                              style: TextStyle(color: Colors.black),
-                              decoration: InputDecoration(
-                                contentPadding: EdgeInsets.symmetric(
-                                  vertical: 16,
+
+                        ElevatedButton(
+                          onPressed: () async {
+                            await authGoogleProvider.signInWithGoogle();
+
+                            if (context.mounted) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => const AuthWrapper(),
                                 ),
-                                hintText: 'Email',
-                                hintStyle: TextStyle(
-                                  color: Colors.grey.shade800,
-                                ),
-                                enabledBorder: UnderlineInputBorder(
-                                  borderSide: BorderSide(color: Colors.grey),
-                                ),
-                                icon: Icon(
-                                  Icons.email_outlined,
-                                  color: Color(0xff000000),
-                                  size: 24,
-                                ),
-                              ),
+                                (route) =>
+                                    false, // Ini perintah buat bakar semua tumpukan layar lama
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.redAccent,
+                            minimumSize: Size(345, 50),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(5),
+                              side: BorderSide(color: Colors.grey),
                             ),
                           ),
+                          child: Text(
+                            'Sign Up with Google',
+                            style: TextStyle(color: Colors.white, fontSize: 19),
+                          ),
                         ),
+                        // Container(
+                        //   child: SizedBox(
+                        //     width: 343.64,
+                        //     child: TextField(
+                        //       controller: _emailController,
+                        //       style: TextStyle(color: Colors.black),
+                        //       decoration: InputDecoration(
+                        //         contentPadding: EdgeInsets.symmetric(
+                        //           vertical: 16,
+                        //         ),
+                        //         hintText: 'Email',
+                        //         hintStyle: TextStyle(
+                        //           color: Colors.grey.shade800,
+                        //         ),
+                        //         enabledBorder: UnderlineInputBorder(
+                        //           borderSide: BorderSide(color: Colors.grey),
+                        //         ),
+                        //         icon: Icon(
+                        //           Icons.email_outlined,
+                        //           color: Color(0xff000000),
+                        //           size: 24,
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                         SizedBox(height: 12.95),
-                        Container(
-                          width: 343.64,
-                          child: TextField(
-                            style: TextStyle(color: Colors.black),
-                            decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 16,
-                              ),
-                              hintText: 'Username',
-                              hintStyle: TextStyle(color: Colors.grey.shade800),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                              icon: Icon(
-                                Icons.person_outlined,
-                                color: Color(0xff000000),
-                                size: 24,
-                              ),
-                            ),
-                          ),
-                        ),
-                        SizedBox(height: 12.95),
-                        Container(
-                          width: 343.64,
-                          child: TextField(
-                            obscureText: _isObscure,
-                            controller: _passwordController,
-                            style: TextStyle(color: Colors.black),
-                            decoration: InputDecoration(
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 16,
-                              ),
-                              hintText: 'Password',
-                              suffixIcon: IconButton(onPressed: () {
-                                setState(() {
-                                  _isObscure = !_isObscure;
-                                });
-                              }, icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility),color: Colors.black,
-                              ),
-                              hintStyle: TextStyle(color: Colors.grey.shade800),
-                              enabledBorder: UnderlineInputBorder(
-                                borderSide: BorderSide(color: Colors.grey),
-                              ),
-                              icon: Icon(
-                                Icons.lock_outlined,
-                                color: Color(0xff000000),
-                                size: 24,
-                              ),
-                            ),
-                          ),
-                        ),
+                        // Container(
+                        //   width: 343.64,
+                        //   child: TextField(
+                        //     style: TextStyle(color: Colors.black),
+                        //     decoration: InputDecoration(
+                        //       contentPadding: EdgeInsets.symmetric(
+                        //         vertical: 16,
+                        //       ),
+                        //       hintText: 'Username',
+                        //       hintStyle: TextStyle(color: Colors.grey.shade800),
+                        //       enabledBorder: UnderlineInputBorder(
+                        //         borderSide: BorderSide(color: Colors.grey),
+                        //       ),
+                        //       icon: Icon(
+                        //         Icons.person_outlined,
+                        //         color: Color(0xff000000),
+                        //         size: 24,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
+                        // SizedBox(height: 12.95),
+                        // Container(
+                        //   width: 343.64,
+                        //   child: TextField(
+                        //     obscureText: _isObscure,
+                        //     controller: _passwordController,
+                        //     style: TextStyle(color: Colors.black),
+                        //     decoration: InputDecoration(
+                        //       contentPadding: EdgeInsets.symmetric(
+                        //         vertical: 16,
+                        //       ),
+                        //       hintText: 'Password',
+                        //       suffixIcon: IconButton(onPressed: () {
+                        //         setState(() {
+                        //           _isObscure = !_isObscure;
+                        //         });
+                        //       }, icon: Icon(_isObscure ? Icons.visibility_off : Icons.visibility),color: Colors.black,
+                        //       ),
+                        //       hintStyle: TextStyle(color: Colors.grey.shade800),
+                        //       enabledBorder: UnderlineInputBorder(
+                        //         borderSide: BorderSide(color: Colors.grey),
+                        //       ),
+                        //       icon: Icon(
+                        //         Icons.lock_outlined,
+                        //         color: Color(0xff000000),
+                        //         size: 24,
+                        //       ),
+                        //     ),
+                        //   ),
+                        // ),
                         SizedBox(height: 18.35),
 
                         Container(
