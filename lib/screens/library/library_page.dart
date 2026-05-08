@@ -13,6 +13,7 @@ import 'package:percobaan/services/update_service.dart';
 import 'package:percobaan/providers/playlist_provider.dart';
 import 'package:percobaan/providers/song_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:percobaan/providers/auth_google_provider.dart';
 
 class LibraryPage extends StatefulWidget {
   final ScrollController? externalScrollController;
@@ -226,6 +227,9 @@ class LibraryPageState extends State<LibraryPage> {
   @override
   Widget build(BuildContext context) {
     final systemsItems = _buildSystemItems(context);
+    final authProvider = context.watch<AuthGoogleProvider>();
+    final userData = authProvider.user;
+
     return Scaffold(
       backgroundColor: Color(0xFF191414),
       appBar: AppBar(
@@ -234,7 +238,8 @@ class LibraryPageState extends State<LibraryPage> {
           children: <Widget>[
             CircleAvatar(
               radius: 22,
-              backgroundImage: AssetImage('images/febri.jpg'),
+              backgroundImage: (userData != null && userData.photoURL != null) ? NetworkImage(userData.photoURL!) : null,
+              child: (userData == null || userData.photoURL == null) ? Icon(Icons.person, size: 22) : null,
             ),
             SizedBox(width: 10),
             Text(

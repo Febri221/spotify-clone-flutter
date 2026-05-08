@@ -9,7 +9,8 @@ import 'package:percobaan/screens/overlay/lyrics_overlay.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 import 'package:percobaan/auth_wrapper.dart';
-import 'package:percobaan/providers/asd.dart';
+import 'package:percobaan/providers/auth_google_provider.dart';
+
 
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -55,24 +56,25 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AudioProvider()),
         ChangeNotifierProvider(
-          create: (_) => SongProvider()..fetchGlobalSongs(),
-        ),
+          create: (_) => SongProvider()..fetchGlobalSongs()),
         ChangeNotifierProvider(create: (_) => PlaylistProvider()),
         ChangeNotifierProvider(create: (_) => AuthGoogleProvider()),
+
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         builder: (context, child) {
-          return Container(color: Colors.black, child: child);
+          return Container(color: const Color(0xFF0F172A), child: child);
         },
         theme: ThemeData(
-          scaffoldBackgroundColor: Colors.black,
-          canvasColor: Colors.black,
-          dialogBackgroundColor: Colors.grey.shade900,
-          cardColor: Colors.grey.shade900,
-          colorScheme: ColorScheme.dark(
-            primary: Colors.black,
-            secondary: Colors.grey,
+          scaffoldBackgroundColor: const Color(0xFF2962FF), // Biru malam pekat
+          canvasColor: const Color(0xFF0F172A),
+          dialogBackgroundColor: const Color(0xFF1E293B),
+          cardColor: const Color(0xFF1E293B),
+          colorScheme: const ColorScheme.dark(
+            primary: Color(0xFF38BDF8), // Aksen biru muda
+            secondary: Color(0xFF94A3B8),
+            surface: Color(0xFF0F172A),
           ),
           inputDecorationTheme: InputDecorationTheme(
             enabledBorder: UnderlineInputBorder(

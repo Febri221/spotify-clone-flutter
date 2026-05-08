@@ -4,7 +4,7 @@ import 'package:percobaan/screens/library/library_page.dart';
 import 'package:percobaan/screens/home/home_page.dart';
 import 'package:percobaan/screens/search_page.dart';
 import 'package:percobaan/screens/premium_page.dart';
-import 'package:percobaan/screens/create_page.dart';
+import 'package:percobaan/screens/profile/Profile_page.dart';
 import 'package:percobaan/widgets/mini_player.dart';
 
 
@@ -30,13 +30,13 @@ class _BottomNavbarState extends State<BottomNavbar> {
  
 
   void _onItemTapped(int index) {
-    if (index == 4) {
-      setState(() => _selectedIndex = 2);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        libraryKey.currentState?.showCreateModalFromOutside();
-      });
-      return;
-    }
+    // if (index == 4) {
+    //   setState(() => _selectedIndex = 2);
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     libraryKey.currentState?.showCreateModalFromOutside();
+    //   });
+    //   return;
+    // }
 
     if (_selectedIndex == index && index == 2) {
       libraryScrollController.animateTo(0, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
@@ -63,7 +63,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
       },
     ),
     const PremiumPage(),
-    const CreatePage(),
+    const ProfilePage(),
     ];
 
     return PopScope(
@@ -90,7 +90,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
            child: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
-            backgroundColor: const Color(0xFF191414),
+            backgroundColor: const Color(0xFF2962FF),
             type: BottomNavigationBarType.fixed,
             selectedItemColor: Colors.white,
             unselectedItemColor: Colors.white54,
@@ -99,7 +99,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
               BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
               BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Your Library'),
               BottomNavigationBarItem(icon: Icon(Icons.workspace_premium), label: 'Premium'),
-              BottomNavigationBarItem(icon: Icon(Icons.add), label: 'Create'),
+              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'My Profile'),
             ],
            )),
            bottomSheet: const MiniPlayerWidget(),

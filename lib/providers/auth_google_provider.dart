@@ -6,7 +6,17 @@ class AuthGoogleProvider with ChangeNotifier {
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   
+  User? _user = FirebaseAuth.instance.currentUser;
+  User? get user => _user;
+
   bool _isInitialized = false;
+
+  AuthGoogleProvider() {
+    FirebaseAuth.instance.authStateChanges().listen((User? user) {
+      _user = user;
+      notifyListeners();
+    });
+  }
 
   Future<void> signInWithGoogle() async {
     try {
@@ -25,10 +35,12 @@ class AuthGoogleProvider with ChangeNotifier {
       );
 
       await FirebaseAuth.instance.signInWithCredential(credential);
+      _user = FirebaseAuth.instance.currentUser;
       print('Login successful');
     } catch (e) {
       print('Login failed: $e');
       print("Waduh, error pas login: $e");
     }
   }
+
 }

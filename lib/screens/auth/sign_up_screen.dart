@@ -5,7 +5,7 @@ import 'package:percobaan/widgets/bottom_navbar.dart';
 import 'package:percobaan/screens/auth/login_screen.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter/gestures.dart';
-import 'package:percobaan/providers/asd.dart';
+import 'package:percobaan/providers/auth_google_provider.dart';
 import 'package:provider/provider.dart';
 
 class SignUpScreen extends StatefulWidget {
