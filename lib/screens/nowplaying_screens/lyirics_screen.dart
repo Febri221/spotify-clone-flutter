@@ -15,6 +15,7 @@ class LyricsScreen extends StatefulWidget {
 
 class _LyricsPageState extends State<LyricsScreen>
     with AutomaticKeepAliveClientMixin {
+      
   List<Map<String, dynamic>> _lyrics = [];
   bool _isLoading = true;
   int _lastAutoScrollIndex = -1;

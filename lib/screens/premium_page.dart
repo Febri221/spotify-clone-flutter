@@ -15,36 +15,7 @@ class _PremiumPageState extends State<PremiumPage> {
     return Scaffold(
       appBar: AppBar(),
       body: Center(
-        child: ElevatedButton(
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: Text('Konfirmasi Logout'),
-                content: Text('Yakin mau Logout?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Tidak'),
-                  ),
-                  TextButton(
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await FirebaseAuth.instance.signOut();
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => LoginPage()),
-                        (route) => false,
-                      );
-                    },
-                    child: Text('Ya'),
-                  ),
-                ],
-              ),
-            );
-          },
-          child: Text('Logout'),
-        ),
+        
       ),
     );
   }

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 
 class AuthGoogleProvider with ChangeNotifier {
   final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  
   
   User? _user = FirebaseAuth.instance.currentUser;
   User? get user => _user;

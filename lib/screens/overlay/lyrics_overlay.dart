@@ -113,98 +113,107 @@ class _LyricsOverlayState extends State<LyricsOverlay> {
             onPointerDown: (_) => setState(() => isTouching = true),
             onPointerUp: (_) => setState(() => isTouching = false),
             onPointerCancel: (_) => setState(() => isTouching = false),
+            
 
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 20),
-              decoration: BoxDecoration(
-                color: isTouching
-                    ? Colors.black.withOpacity(0.9)
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-              ),
+            child: GestureDetector(
+              onDoubleTap: () async {
+                await FlutterOverlayWindow.closeOverlay();
+              },
 
-              child: lyrics.isEmpty
-                  ? const SizedBox()
-                  : PageView.builder(
-                      controller: _pageController,
-                      scrollDirection: Axis.vertical,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: lyrics.length,
-                      itemBuilder: (context, index) {
-                        final bool isActive = index == currentIndex;
-                        final String textContent = lyrics[index]['text'] ?? "";
+              behavior: HitTestBehavior.translucent,
 
-                        return Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 10),
-                          alignment: Alignment.center,
-
-                          // 1. EFEK PUDAR
-                          child: AnimatedOpacity(
-                            duration: const Duration(milliseconds: 500),
-                            opacity: isActive ? 1.0 : 0.5,
-
-                            // 2. EFEK MENGECIL (Scale)
-                            child: AnimatedScale(
-                              duration: const Duration(milliseconds: 400),
-                              scale: isActive ? 1.0 : 0.85,
-                              curve: Curves.easeOutBack,
-
-                              // 3. SAFETY NET (FittedBox)
-                              child: FittedBox(
-                                fit: BoxFit.scaleDown,
-                                alignment: Alignment.center,
-
-                                child: Container(
-                                  // Constraint Lebar (Biar turun baris)
-                                  constraints: BoxConstraints(
-                                    maxWidth: overlayWidth - 20,
-                                  ),
-
-                                  // 4. ANTI LOMPAT (Stack Ghost Text)
-                                  child: Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      // LAYER A: GHOST TEXT (HANTU)
-                                      Text(
-                                        textContent,
-                                        textAlign: TextAlign.center,
-                                        style: const TextStyle(
-                                          color: Colors.transparent, // Gak kelihatan
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.2,
-                                        ),
-                                      ),
-
-                                      // LAYER B: REAL TEXT (ASLI)
-                                      AnimatedDefaultTextStyle(
-                                        duration: const Duration(
-                                          milliseconds: 300,
-                                        ),
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.bold,
-                                          height: 1.2,
-                                          fontFamily: 'Roboto',
-                                        ),
-                                        textAlign: TextAlign.center,
-                                        child: Text(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 20),
+                decoration: BoxDecoration(
+                  color: isTouching
+                      ? Colors.black.withOpacity(0.9)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              
+                child: lyrics.isEmpty
+                    ? const SizedBox()
+                    : PageView.builder(
+                        controller: _pageController,
+                        scrollDirection: Axis.vertical,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: lyrics.length,
+                        itemBuilder: (context, index) {
+                          final bool isActive = index == currentIndex;
+                          final String textContent = lyrics[index]['text'] ?? "";
+              
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 10),
+                            alignment: Alignment.center,
+              
+                            // 1. EFEK PUDAR
+                            child: AnimatedOpacity(
+                              duration: const Duration(milliseconds: 500),
+                              opacity: isActive ? 1.0 : 0.5,
+              
+                              // 2. EFEK MENGECIL (Scale)
+                              child: AnimatedScale(
+                                duration: const Duration(milliseconds: 400),
+                                scale: isActive ? 1.0 : 0.85,
+                                curve: Curves.easeOutBack,
+              
+                                // 3. SAFETY NET (FittedBox)
+                                child: FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  alignment: Alignment.center,
+              
+                                  child: Container(
+                                    // Constraint Lebar (Biar turun baris)
+                                    constraints: BoxConstraints(
+                                      maxWidth: overlayWidth - 20,
+                                    ),
+              
+                                    // 4. ANTI LOMPAT (Stack Ghost Text)
+                                    child: Stack(
+                                      alignment: Alignment.center,
+                                      children: [
+                                        // LAYER A: GHOST TEXT (HANTU)
+                                        Text(
                                           textContent,
                                           textAlign: TextAlign.center,
+                                          style: const TextStyle(
+                                            color: Colors.transparent, // Gak kelihatan
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            height: 1.2,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+              
+                                        // LAYER B: REAL TEXT (ASLI)
+                                        AnimatedDefaultTextStyle(
+                                          duration: const Duration(
+                                            milliseconds: 300,
+                                          ),
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.bold,
+                                            height: 1.2,
+                                            fontFamily: 'Roboto',
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          child: Text(
+                                            textContent,
+                                            textAlign: TextAlign.center,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
+              ),
             ),
           );
         },
