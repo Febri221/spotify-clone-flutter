@@ -38,8 +38,16 @@ class AudioProvider with ChangeNotifier {
 
   bool _isSetup = false;
 
+  int _currentTabIndex = 0;
+  int get currentTabIndex => _currentTabIndex;
+
   AudioProvider() {
     _initSmartStream();
+  }
+
+  void updateTabIndex(int index) {
+    _currentTabIndex = index;
+    notifyListeners();
   }
 
   void _initSmartStream() {
@@ -106,9 +114,9 @@ class AudioProvider with ChangeNotifier {
     });
 
     _player.sequenceStateStream.listen((sequenceState) {
-      if (sequenceState?.currentSource == null) return;
+      if (sequenceState.currentSource == null) return;
 
-      final item = sequenceState!.currentSource!.tag as MediaItem;
+      final item = sequenceState.currentSource!.tag as MediaItem;
 
       _fetchAndSendLyrics(item.artist ?? "unkown", item.title);
     });

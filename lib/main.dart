@@ -63,22 +63,19 @@ class MyApp extends StatelessWidget {
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
-        builder: (context, child) {
-          return Container(color: const Color(0xFF0F172A), child: child);
-        },
         theme: ThemeData(
           scaffoldBackgroundColor: const Color(0xFF2962FF), // Biru malam pekat
-          canvasColor: const Color(0xFF0F172A),
-          dialogBackgroundColor: const Color(0xFF1E293B),
-          cardColor: const Color(0xFF1E293B),
+
+          // dialogBackgroundColor: const Color(0xFF1E293B),
+
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFF38BDF8), // Aksen biru muda
             secondary: Color(0xFF94A3B8),
-            surface: Color(0xFF0F172A),
+
           ),
           inputDecorationTheme: InputDecorationTheme(
             enabledBorder: UnderlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey),
+
             ),
             focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade800),
@@ -92,9 +89,6 @@ class MyApp extends StatelessWidget {
             },
           ),
         ),
-        // LOGIC NOTE: Kamu punya AuthWrapper tapi gak dipake di sini?
-        // Harusnya home: AuthWrapper() kalau mau cek login otomatis.
-        // Tapi kalau emang mau SplashScreen dulu, pastikan SplashScreen punya navigasi.
         home: AuthWrapper(),
       ),
     );

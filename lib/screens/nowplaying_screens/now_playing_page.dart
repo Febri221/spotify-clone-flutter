@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:percobaan/screens/nowplaying_screens/lyirics_screen.dart';
+import 'package:percobaan/widgets/control_button/loop_button.dart';
+import 'package:percobaan/widgets/control_button/next.dart';
+import 'package:percobaan/widgets/control_button/previous.dart';
+import 'package:percobaan/widgets/control_button/shuffle.dart';
 import 'package:provider/provider.dart'; // WAJIB ADA
-import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:marquee/marquee.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
@@ -28,6 +31,7 @@ class _NowPlayingPageState extends State<NowPlayingPage>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    
   }
 
   @override
@@ -92,8 +96,9 @@ class _NowPlayingPageState extends State<NowPlayingPage>
     final screenWidth = MediaQuery.of(context).size.width;
 
     // --- CARA BARU AKSES DATA (PROVIDER) ---
-    // 1. Ambil Data Lagu (Pakai watch biar UI update otomatis)
-    final currentSong = context.watch<AudioProvider>().currentSong;
+
+    // 1. Ambil Data lagu menggunakan select karena kita cuma butuh currentSong doang, biar gak rebuild semua widget yang dengerin provider ini
+    final currentSong = context.select<AudioProvider, SongModel?>((provider)=> provider.currentSong);
 
     // 2. Ambil Kontrol Player (Pakai read buat tombol-tombol)
     final audioProvider = context.read<AudioProvider>();
@@ -221,6 +226,8 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                       width: screenWidth - 50,
                       height: screenWidth - 50,
                       child: QueryArtworkWidget(
+                        // berikan id yang unik untuk setiap lagu, biar widget ini gak bingung pas rebuild dan gak reload gambarnya terus-menerus
+                        key: ValueKey(currentSong.id),
                         id: currentSong.id,
                         type: ArtworkType.AUDIO,
                         artworkHeight: double.infinity,
@@ -404,38 +411,10 @@ class _NowPlayingPageState extends State<NowPlayingPage>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               // 1. SHUFFLE
-              StreamBuilder<bool>(
-                stream: audioProvider.player.shuffleModeEnabledStream,
-                builder: (context, snapshot) {
-                  final shuffleEnabled = snapshot.data ?? false;
-                  return IconButton(
-                    onPressed: () async {
-                      final enable = !shuffleEnabled;
-                      if (enable) await audioProvider.player.shuffle();
-                      await audioProvider.player.setShuffleModeEnabled(enable);
-                    },
-                    icon: Icon(
-                      Icons.shuffle,
-                      color: shuffleEnabled ? Colors.white : Colors.grey,
-                      size: 25,
-                    ),
-                  );
-                },
-              ),
+              ShuffleControll(),
 
               // 2. PREVIOUS
-              IconButton(
-                onPressed: () async {
-                  await audioProvider.player.seekToPrevious();
-                  audioProvider.resume(); // Pastikan resume
-                },
-                icon: const Icon(
-                  Icons.skip_previous_rounded,
-                  color: Colors.white,
-                  size: 50,
-                ),
-              ),
-
+              PreviousControll(),
               // 3. PLAY / PAUSE (Ini pake logic Provider)
               // Kita pake Selector atau Watch khusus variabel isPlaying
               Builder(
@@ -457,44 +436,11 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                 },
               ),
 
-              // 4. NEXT
-              IconButton(
-                onPressed: () async {
-                  await audioProvider.player.seekToNext();
-                  audioProvider.resume();
-                },
-                icon: const Icon(
-                  Icons.skip_next_rounded,
-                  color: Colors.white,
-                  size: 50,
-                ),
-              ),
+              // 4. NEXT Button
+              NextControll(),
 
-              // 5. LOOP
-              StreamBuilder<LoopMode>(
-                stream: audioProvider.player.loopModeStream,
-                builder: (context, snapshot) {
-                  final loopMode = snapshot.data ?? LoopMode.off;
-                  IconData icon = (loopMode == LoopMode.one)
-                      ? Icons.repeat_one_rounded
-                      : Icons.repeat_rounded;
-                  Color color = (loopMode == LoopMode.off)
-                      ? Colors.grey
-                      : Colors.white;
-                  return IconButton(
-                    onPressed: () async {
-                      LoopMode newMode = LoopMode.off;
-                      if (loopMode == LoopMode.off) {
-                        newMode = LoopMode.all;
-                      } else if (loopMode == LoopMode.all) {
-                        newMode = LoopMode.one;
-                      }
-                      await audioProvider.player.setLoopMode(newMode);
-                    },
-                    icon: Icon(icon, color: color, size: 25),
-                  );
-                },
-              ),
+              // 5. LOOP Button
+              LoopButton(),
             ],
           ),
           const SizedBox(height: 30),

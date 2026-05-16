@@ -49,24 +49,25 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     super.dispose();
   }
 
-    Future<void> searchDataSong() async {
+  Future<void> searchDataSong() async {
     //ambil data dari API
-    final url = Uri.parse('https://jann-undeclaiming-unrhythmically.ngrok-free.dev/api/lagu');
+    final url = Uri.parse(
+      'https://jann-undeclaiming-unrhythmically.ngrok-free.dev/api/lagu',
+    );
 
-    
     //response dari API
-    try{
-      
+    try {
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final List dataLagu = json.decode(response.body);
         print('Mantap bro $dataLagu');
 
         List<SongModel> songFromServer = dataLagu.map((item) {
-          return SongModel ({
-            "_id":item['id'],
-            "title":item['judul'],
-            "artist":item['artis'], "_data":item['url_lagu'],
+          return SongModel({
+            "_id": item['id'],
+            "title": item['judul'],
+            "artist": item['artis'],
+            "_data": item['url_lagu'],
             "duration": 0,
           });
         }).toList();
@@ -74,7 +75,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
         setState(() {
           _currentSongs = songFromServer;
         });
-        
       } else {
         print('Duh gagal ngambil data ${response.statusCode}');
       }
@@ -91,9 +91,11 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
     // Update UI biar mini player muncul
     // AudioManager().isPlayerExpanded.value = true;
+    if (mounted) {
     context.read<AudioProvider>().togglePlayerExpanded();
-  }
+    }
 
+  }
 
   void _removeSong(int index) {
     setState(() {
@@ -103,7 +105,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     // Update ke Hive jika ini playlist user (bukan Downloads/System)
     if (widget.playlistKey != null) {
       var box = Hive.box('Playlists');
-      
+
       List<dynamic> updatedList = _currentSongs.map((e) => e.getMap).toList();
       // Timpa data lama dengan list lagu yang baru (yang sudah dikurangi)
       box.put(widget.playlistKey, updatedList);
@@ -117,7 +119,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       );
     }
   }
-
 
   // --- CRUD FUNCTIONS ---
 
@@ -137,7 +138,6 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     // 2. EKSEKUSI UTAMA
     if (permissionGranted) {
       try {
-
         final provider = context.read<AudioProvider>();
         final currentPlaying = provider.currentSong;
 
@@ -226,8 +226,8 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
       displayName = rawPlaylistKey.split('__')[0];
     }
 
-    final playlistBox = Hive.box('Playlists'); 
-    
+    final playlistBox = Hive.box('Playlists');
+
     // 2. Ambil data pakai KEY ASLI (tetap pakai rawPlaylistKey buat database)
     List<dynamic> currentSongs = playlistBox.get(
       rawPlaylistKey,
@@ -243,12 +243,12 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
     if (!exists) {
       currentSongs.add(song.getMap);
       // Simpan ke DB pakai KEY ASLI
-      playlistBox.put(rawPlaylistKey, currentSongs); 
-      
+      playlistBox.put(rawPlaylistKey, currentSongs);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           // Tampilkan nama yang sudah bersih
-          content: Text("Ditambahkan ke $displayName"), 
+          content: Text("Ditambahkan ke $displayName"),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 1),
         ),
@@ -362,7 +362,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                 // ValueListenableBuilder mendengarkan AudioManager global
                 return Selector<AudioProvider, int?>(
                   selector: (_, provider) => provider.currentSong?.id,
-                  builder: (context, currentSongId,ild) {
+                  builder: (context, currentSongId, ild) {
                     final bool isSelected = currentSongId == song.id;
                     final textColor = isSelected ? Colors.green : Colors.white;
 
@@ -484,7 +484,7 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
                               ),
                             ),
 
-                            if (widget.playlistKey != null) 
+                          if (widget.playlistKey != null)
                             const PopupMenuItem(
                               value: 'remove',
                               child: Text(

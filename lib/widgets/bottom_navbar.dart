@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:percobaan/providers/audio_provider.dart';
 import 'package:percobaan/screens/library/library_page.dart';
 import 'package:percobaan/screens/home/home_page.dart';
+import 'package:percobaan/screens/nowplaying_screens/now_playing_page.dart';
 import 'package:percobaan/screens/search_page.dart';
 import 'package:percobaan/screens/premium_page.dart';
 import 'package:percobaan/screens/profile/Profile_page.dart';
-import 'package:percobaan/widgets/mini_player.dart';
 
+import 'package:percobaan/widgets/miniplayer/mini_player.dart';
+import 'package:provider/provider.dart';
 
 class BottomNavbar extends StatefulWidget {
   const BottomNavbar({super.key});
@@ -21,13 +24,10 @@ class _BottomNavbarState extends State<BottomNavbar> {
   final ScrollController libraryScrollController = ScrollController();
   final GlobalKey<LibraryPageState> libraryKey = GlobalKey<LibraryPageState>();
 
-
   @override
   void initState() {
     super.initState();
   }
-
- 
 
   void _onItemTapped(int index) {
     // if (index == 4) {
@@ -38,8 +38,14 @@ class _BottomNavbarState extends State<BottomNavbar> {
     //   return;
     // }
 
+    context.read<AudioProvider>().updateTabIndex(index);
+
     if (_selectedIndex == index && index == 2) {
-      libraryScrollController.animateTo(0, duration: const Duration(milliseconds: 350), curve: Curves.easeOut);
+      libraryScrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+      );
       libraryNavKey.currentState?.popUntil((route) => route.isFirst);
     } else {
       setState(() {
@@ -50,20 +56,23 @@ class _BottomNavbarState extends State<BottomNavbar> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> currentPages = [const HomePage(),
-    SearchPage(),
+    final List<Widget> currentPages = [
+      const HomePage(),
+      SearchPage(),
 
-    Navigator(
-      key: libraryNavKey,
-      onGenerateRoute: (settings) {
-        return MaterialPageRoute(builder: (context) => LibraryPage(
-          key: libraryKey,
-          externalScrollController: libraryScrollController,
-        ));
-      },
-    ),
-    const PremiumPage(),
-    const ProfilePage(),
+      Navigator(
+        key: libraryNavKey,
+        onGenerateRoute: (settings) {
+          return MaterialPageRoute(
+            builder: (context) => LibraryPage(
+              key: libraryKey,
+              externalScrollController: libraryScrollController,
+            ),
+          );
+        },
+      ),
+      const PremiumPage(),
+      const ProfilePage(),
     ];
 
     return PopScope(
@@ -71,40 +80,65 @@ class _BottomNavbarState extends State<BottomNavbar> {
       onPopInvoked: (didPop) async {
         if (didPop) return;
         final isLibraryTab = _selectedIndex == 2;
-        if (isLibraryTab && libraryNavKey.currentState != null && libraryNavKey.currentState!.canPop()) {
+        if (isLibraryTab &&
+            libraryNavKey.currentState != null &&
+            libraryNavKey.currentState!.canPop()) {
           libraryNavKey.currentState!.pop();
           return;
         }
         SystemNavigator.pop();
       },
       child: Scaffold(
-        body: IndexedStack(
-          index: _selectedIndex,
-          children:
-          currentPages,
-          ),
-          bottomNavigationBar: Theme(data: Theme.of(context).copyWith(
+        body: Stack(
+          children: [
+            IndexedStack(
+              index: _selectedIndex,
+              children: currentPages, // Halaman-halaman lo (Home, Library, dll)
+            ),
+
+            // Miniplayer ditaruh di sini agar melayang murni di atas page
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: kBottomNavigationBarHeight - 55, // Pas di atas bottom bar
+              child: const MiniPlayerWidget(),
+            ),
+          ],
+        ),
+        bottomNavigationBar: Theme(
+          data: Theme.of(context).copyWith(
             splashColor: Colors.transparent,
             highlightColor: Colors.transparent,
           ),
-           child: BottomNavigationBar(
+          child: BottomNavigationBar(
             currentIndex: _selectedIndex,
             onTap: _onItemTapped,
-            backgroundColor: const Color(0xFF2962FF),
+            backgroundColor: const Color(0xFF1E1E1E),
             type: BottomNavigationBarType.fixed,
             selectedItemColor: Colors.white,
             unselectedItemColor: Colors.white54,
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-              BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-              BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'Your Library'),
-              BottomNavigationBarItem(icon: Icon(Icons.workspace_premium), label: 'Premium'),
-              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'My Profile'),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.search),
+                label: 'Search',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.menu_book),
+                label: 'Your Library',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.workspace_premium),
+                label: 'Premium',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'My Profile',
+              ),
             ],
-           )),
-           bottomSheet: const MiniPlayerWidget(),
-      )
-      );
+          ),
+        ),
+      ),
+    );
   }
-
 }

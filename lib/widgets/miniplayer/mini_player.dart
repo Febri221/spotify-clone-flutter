@@ -13,6 +13,8 @@ class MiniPlayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Logic: Dengerin status Player Expanded (Aktif/Gak)
+    final audioProvider = context.read<AudioProvider>();
+
     return Selector<AudioProvider, SongModel?>(
       selector: (_, provider) => provider.currentSong,
 
@@ -24,7 +26,7 @@ class MiniPlayerWidget extends StatelessWidget {
             Navigator.of(context).push(
               PageRouteBuilder(
                 opaque: false,
-                barrierColor: Colors.black.withOpacity(0.6),
+                barrierColor: const Color(0xFF191414),
                 transitionDuration: const Duration(milliseconds: 300),
                 reverseTransitionDuration: const Duration(milliseconds: 300),
 
@@ -47,19 +49,32 @@ class MiniPlayerWidget extends StatelessWidget {
               ),
             );
           },
-          child: Selector<AudioProvider, SongModel?>(
-            selector: (_, provider) => provider.currentSong,
+          child: Selector<AudioProvider, int>(
+            selector: (_, provider) => provider.currentTabIndex,
 
-            builder: (context, currentSong, child) {
-              if (currentSong == null) return const SizedBox(height: 70);
+            builder: (context, currentTabIndex, child) {
+              
 
-              final audioProvider = context.read<AudioProvider>();
+              final bool isLibraryTab = currentTabIndex == 2;
 
-              return Container(
+              return AnimatedContainer(
+                duration: const Duration(milliseconds: 250),
+       
                 height: 72, // Tambah 2 pixel buat tempat garis
                 width: double.infinity,
-                color: Colors.grey[900],
-                // Padding dihilangkan dari sini, dipindah ke dalem Row
+                clipBehavior: Clip.antiAlias,
+
+                margin: EdgeInsets.only(
+                  left:  8,
+                  right: 8,
+                  bottom: 8,
+                ),
+
+                decoration: BoxDecoration(
+                  color: Color(0xFF0DBDE6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+
                 
                 // === DI SINI PERUBAHANNYA: KITA PAKE COLUMN ===
                 child: Column(
@@ -128,7 +143,7 @@ class MiniPlayerWidget extends StatelessWidget {
                                   Text(
                                     currentSong.artist ?? "Unknown",
                                     style: const TextStyle(
-                                      color: Colors.grey,
+                                      color: Colors.white,
                                       fontSize: 12,
                                     ),
                                     maxLines: 1,
@@ -217,33 +232,39 @@ class MiniPlayerWidget extends StatelessWidget {
                     ),
 
                     // --- BAGIAN 2: GARIS PROGRESS TIPIS DI BAWAH ---
-                    StreamBuilder<Duration>(
-                      stream: audioProvider.player.positionStream,
-                      builder: (context, snapshotPosition) {
-                        final position = snapshotPosition.data ?? Duration.zero;
-
-                        return StreamBuilder<Duration?>(
-                          stream: audioProvider.player.durationStream,
-                          builder: (context, snapshotDuration) {
-                            final duration = snapshotDuration.data ?? const Duration(seconds: 1);
-
-                            double progress = 0.0;
-                            // Cegah error pembagian dengan nol atau durasi kosong
-                            if (duration.inMilliseconds > 0) {
-                              progress = position.inMilliseconds / duration.inMilliseconds;
-                            }
-                            if (progress > 1.0) progress = 1.0;
-                            if (progress < 0.0 || progress.isNaN) progress = 0.0;
-
-                            return LinearProgressIndicator(
-                              value: progress,
-                              minHeight: 2, // Garisnya setipis 2 piksel
-                              backgroundColor: Colors.transparent, // Background tembus pandang
-                              valueColor: const AlwaysStoppedAnimation<Color>(Colors.tealAccent), // Garis nyalanya warna teal
-                            );
-                          },
-                        );
-                      },
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
+                      child: StreamBuilder<Duration>(
+                        stream: audioProvider.player.positionStream,
+                        builder: (context, snapshotPosition) {
+                          final position = snapshotPosition.data ?? Duration.zero;
+                      
+                          return StreamBuilder<Duration?>(
+                            stream: audioProvider.player.durationStream,
+                            builder: (context, snapshotDuration) {
+                              final duration = snapshotDuration.data ?? const Duration(seconds: 1);
+                      
+                              double progress = 0.0;
+                              // Cegah error pembagian dengan nol atau durasi kosong
+                              if (duration.inMilliseconds > 0) {
+                                progress = position.inMilliseconds / duration.inMilliseconds;
+                              }
+                              if (progress > 1.0) progress = 1.0;
+                              if (progress < 0.0 || progress.isNaN) progress = 0.0;
+                      
+                              return LinearProgressIndicator(
+                                value: progress,
+                                minHeight: 2, // Garisnya setipis 2 piksel
+                                backgroundColor: Colors.transparent, // Background tembus pandang
+                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0071BA)), // Garis nyalanya warna teal
+                              );
+                            },
+                          );
+                        },
+                      ),
                     ),
 
                   ],
