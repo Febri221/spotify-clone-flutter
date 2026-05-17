@@ -225,20 +225,23 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                     child: SizedBox(
                       width: screenWidth - 50,
                       height: screenWidth - 50,
-                      child: QueryArtworkWidget(
-                        // berikan id yang unik untuk setiap lagu, biar widget ini gak bingung pas rebuild dan gak reload gambarnya terus-menerus
-                        key: ValueKey(currentSong.id),
-                        id: currentSong.id,
-                        type: ArtworkType.AUDIO,
-                        artworkHeight: double.infinity,
-                        artworkWidth: double.infinity,
-                        artworkFit: BoxFit.fill,
-                        nullArtworkWidget: Container(
-                          color: Colors.grey[900],
-                          child: const Icon(
-                            Icons.music_note,
-                            size: 80,
-                            color: Colors.white,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: QueryArtworkWidget(
+                          // berikan id yang unik untuk setiap lagu, biar widget ini gak bingung pas rebuild dan gak reload gambarnya terus-menerus
+                          key: ValueKey(currentSong.id),
+                          id: currentSong.id,
+                          type: ArtworkType.AUDIO,
+                          artworkHeight: double.infinity,
+                          artworkWidth: double.infinity,
+                          artworkFit: BoxFit.cover,
+                          nullArtworkWidget: Container(
+                            color: Colors.grey[900],
+                            child: const Icon(
+                              Icons.music_note,
+                              size: 80,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
                       ),

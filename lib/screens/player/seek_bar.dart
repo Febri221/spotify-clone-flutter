@@ -23,6 +23,7 @@ class SeekBarState extends State<SeekBar> {
   double? _dragValue; // Nilai posisi saat user menggeser
   bool _isDragging = false; // Status apakah user sedang menyentuh slider?
 
+
   String _formatDuration(Duration? duration) {
     if (duration == null) return "--:--";
     String twoDigits(int n) => n.toString().padLeft(2, "0");
@@ -68,8 +69,8 @@ class SeekBarState extends State<SeekBar> {
       children: [
         SliderTheme(
           data: SliderTheme.of(context).copyWith(
-            trackHeight: 4,
-            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 8),
+            trackHeight: 3,
+            thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 5),
             overlayShape: const RoundSliderOverlayShape(overlayRadius: 16),
             activeTrackColor: Colors.tealAccent,
             inactiveTrackColor: Colors.grey[800],

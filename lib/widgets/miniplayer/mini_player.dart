@@ -3,6 +3,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:marquee/marquee.dart';
 import 'package:percobaan/screens/nowplaying_screens/now_playing_page.dart';
+import 'package:percobaan/screens/player/seek_bar_miniplayer.dart';
 //Providers
 import 'package:provider/provider.dart';
 import 'package:percobaan/providers/audio_provider.dart';
@@ -53,39 +54,81 @@ class MiniPlayerWidget extends StatelessWidget {
             selector: (_, provider) => provider.currentTabIndex,
 
             builder: (context, currentTabIndex, child) {
-              
-
-              final bool isLibraryTab = currentTabIndex == 2;
-
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-       
-                height: 72, // Tambah 2 pixel buat tempat garis
+
+                height: 78, // Tambah 2 pixel buat tempat garis
                 width: double.infinity,
                 clipBehavior: Clip.antiAlias,
 
-                margin: EdgeInsets.only(
-                  left:  8,
-                  right: 8,
-                  bottom: 8,
-                ),
+                margin: EdgeInsets.only(left: 8, right: 8, bottom: 8),
 
                 decoration: BoxDecoration(
                   color: Color(0xFF0DBDE6),
                   borderRadius: BorderRadius.circular(8),
                 ),
 
-                
                 // === DI SINI PERUBAHANNYA: KITA PAKE COLUMN ===
                 child: Column(
                   children: [
-                    
+                    ClipRRect(
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(8),
+                        bottomRight: Radius.circular(8),
+                      ),
+                      child: StreamBuilder<Duration>(
+                        stream: audioProvider.player.positionStream,
+                        builder: (context, snapshotPosition) {
+                          final position =
+                              snapshotPosition.data ?? Duration.zero;
+
+                          return StreamBuilder<Duration?>(
+                            stream: audioProvider.player.durationStream,
+                            builder: (context, snapshotDuration) {
+                              // KUNCI: Ambil data duration asli, jika null set ke 1 detik biar ga crash
+                              final duration = snapshotDuration.data ??
+                                  const Duration(seconds: 1);
+
+                              return MiniSeekBar(
+                                duration:
+                                    duration, 
+                                position: position,
+                                onChangeEnd: (newPosition) {
+                                  audioProvider.player.seek(newPosition);
+                                },
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
                     // --- BAGIAN 1: KONTEN UTAMA (FOTO, JUDUL, TOMBOL) ---
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Row(
                           children: [
+                            /// === FOTO ALBUM ===
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: QueryArtworkWidget(
+                                id: currentSong.id,
+                                type: ArtworkType.AUDIO,
+                                nullArtworkWidget: Container(
+                                  width: 50,
+                                  height: 50,
+                                  color: Colors.grey[800],
+                                  child: const Icon(
+                                    Icons.music_note,
+                                    color: Colors.white54,
+                                  ),
+                                ),
+                                artworkFit: BoxFit.cover,
+                                size: 200, // Resolusi gambar yang diambil (200x200)
+                              ),
+                            ),
+                            SizedBox(width: 3,),
+
                             // === JUDUL & ARTIS ===
                             Expanded(
                               child: Column(
@@ -100,14 +143,18 @@ class MiniPlayerWidget extends StatelessWidget {
                                         color: Colors.white,
                                         fontSize: 14,
                                       );
-                                      final textPainter = TextPainter(
-                                        text: TextSpan(
-                                          text: currentSong.title,
-                                          style: textStyle,
-                                        ),
-                                        maxLines: 1,
-                                        textDirection: TextDirection.ltr,
-                                      )..layout(minWidth: 0, maxWidth: double.infinity);
+                                      final textPainter =
+                                          TextPainter(
+                                            text: TextSpan(
+                                              text: currentSong.title,
+                                              style: textStyle,
+                                            ),
+                                            maxLines: 1,
+                                            textDirection: TextDirection.ltr,
+                                          )..layout(
+                                            minWidth: 0,
+                                            maxWidth: double.infinity,
+                                          );
 
                                       if (textPainter.size.width >
                                           constraints.maxWidth) {
@@ -119,7 +166,6 @@ class MiniPlayerWidget extends StatelessWidget {
                                             scrollAxis: Axis.horizontal,
                                             blankSpace: 50.0,
                                             velocity: 30.0,
-                                            pauseAfterRound: const Duration(seconds: 2),
                                             startPadding: 0.0,
                                             accelerationDuration: Duration.zero,
                                           ),
@@ -155,11 +201,13 @@ class MiniPlayerWidget extends StatelessWidget {
 
                             // === TOMBOL CONTROLS (PREV - PLAY - NEXT) ===
                             Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 // --- TOMBOL PREVIOUS ---
                                 StreamBuilder<SequenceState?>(
-                                  stream: audioProvider.player.sequenceStateStream,
+                                  stream:
+                                      audioProvider.player.sequenceStateStream,
                                   builder: (context, snapshot) {
                                     final sequenceState = snapshot.data;
                                     final bool canGoBack =
@@ -168,13 +216,16 @@ class MiniPlayerWidget extends StatelessWidget {
                                     return IconButton(
                                       onPressed: canGoBack
                                           ? () {
-                                              audioProvider.player.seekToPrevious();
+                                              audioProvider.player
+                                                  .seekToPrevious();
                                               audioProvider.player.play();
                                             }
                                           : null,
                                       icon: Icon(
                                         Icons.skip_previous,
-                                        color: canGoBack ? Colors.white : Colors.grey,
+                                        color: canGoBack
+                                            ? Colors.white
+                                            : Colors.grey,
                                         size: 30,
                                       ),
                                     );
@@ -191,8 +242,8 @@ class MiniPlayerWidget extends StatelessWidget {
                                       },
                                       icon: Icon(
                                         isPlaying
-                                            ? Icons.pause_circle_filled
-                                            : Icons.play_circle_fill,
+                                            ? Icons.pause
+                                            : Icons.play_arrow,
                                         color: Colors.white,
                                         size: 40,
                                       ),
@@ -202,12 +253,14 @@ class MiniPlayerWidget extends StatelessWidget {
 
                                 // --- TOMBOL NEXT ---
                                 StreamBuilder<SequenceState?>(
-                                  stream: audioProvider.player.sequenceStateStream,
+                                  stream:
+                                      audioProvider.player.sequenceStateStream,
                                   builder: (context, snapshot) {
                                     final sequenceState = snapshot.data;
                                     final bool canGoNext =
                                         (sequenceState?.currentIndex ?? 0) <
-                                        ((sequenceState?.sequence.length ?? 0) - 1);
+                                        ((sequenceState?.sequence.length ?? 0) -
+                                            1);
 
                                     return IconButton(
                                       onPressed: canGoNext
@@ -218,7 +271,9 @@ class MiniPlayerWidget extends StatelessWidget {
                                           : null,
                                       icon: Icon(
                                         Icons.skip_next,
-                                        color: canGoNext ? Colors.white : Colors.grey,
+                                        color: canGoNext
+                                            ? Colors.white
+                                            : Colors.grey,
                                         size: 30,
                                       ),
                                     );
@@ -231,42 +286,7 @@ class MiniPlayerWidget extends StatelessWidget {
                       ),
                     ),
 
-                    // --- BAGIAN 2: GARIS PROGRESS TIPIS DI BAWAH ---
-                    ClipRRect(
-                      borderRadius: const BorderRadius.only(
-                        bottomLeft: Radius.circular(8),
-                        bottomRight: Radius.circular(8),
-                      ),
-                      child: StreamBuilder<Duration>(
-                        stream: audioProvider.player.positionStream,
-                        builder: (context, snapshotPosition) {
-                          final position = snapshotPosition.data ?? Duration.zero;
-                      
-                          return StreamBuilder<Duration?>(
-                            stream: audioProvider.player.durationStream,
-                            builder: (context, snapshotDuration) {
-                              final duration = snapshotDuration.data ?? const Duration(seconds: 1);
-                      
-                              double progress = 0.0;
-                              // Cegah error pembagian dengan nol atau durasi kosong
-                              if (duration.inMilliseconds > 0) {
-                                progress = position.inMilliseconds / duration.inMilliseconds;
-                              }
-                              if (progress > 1.0) progress = 1.0;
-                              if (progress < 0.0 || progress.isNaN) progress = 0.0;
-                      
-                              return LinearProgressIndicator(
-                                value: progress,
-                                minHeight: 2, // Garisnya setipis 2 piksel
-                                backgroundColor: Colors.transparent, // Background tembus pandang
-                                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF0071BA)), // Garis nyalanya warna teal
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-
+                  
                   ],
                 ),
               );

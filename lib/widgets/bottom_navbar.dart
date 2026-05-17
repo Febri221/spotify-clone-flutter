@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:percobaan/providers/audio_provider.dart';
 import 'package:percobaan/screens/library/library_page.dart';
 import 'package:percobaan/screens/home/home_page.dart';
-import 'package:percobaan/screens/nowplaying_screens/now_playing_page.dart';
 import 'package:percobaan/screens/search_page.dart';
 import 'package:percobaan/screens/premium_page.dart';
 import 'package:percobaan/screens/profile/Profile_page.dart';
