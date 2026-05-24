@@ -219,6 +219,7 @@ class MiniPlayerWidget extends StatelessWidget {
                                               audioProvider.player
                                                   .seekToPrevious();
                                               audioProvider.player.play();
+                                              audioProvider.resetPlaybackTimer();
                                             }
                                           : null,
                                       icon: Icon(
@@ -239,6 +240,7 @@ class MiniPlayerWidget extends StatelessWidget {
                                     return IconButton(
                                       onPressed: () {
                                         audioProvider.togglePlay();
+                                        audioProvider.stopPlaybackTimer();
                                       },
                                       icon: Icon(
                                         isPlaying
@@ -267,6 +269,7 @@ class MiniPlayerWidget extends StatelessWidget {
                                           ? () {
                                               audioProvider.player.seekToNext();
                                               audioProvider.player.play();
+                                              audioProvider.resetPlaybackTimer();
                                             }
                                           : null,
                                       icon: Icon(

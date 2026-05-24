@@ -17,6 +17,7 @@ class ShuffleControll extends StatelessWidget {
             final enable = !shuffleEnabled;
             if (enable) await audioProvider.player.shuffle();
             await audioProvider.player.setShuffleModeEnabled(enable);
+            // audioProvider.resetPlaybackTimer();
           },
           icon: Icon(
             Icons.shuffle,

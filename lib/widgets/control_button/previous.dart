@@ -13,6 +13,7 @@ class PreviousControll extends StatelessWidget {
       onPressed: () async {
         await audioProvider.player.seekToPrevious();
         audioProvider.resume(); // Pastikan resume
+        audioProvider.resetPlaybackTimer(); // Reset timer saat ganti lagu
       },
       icon: const Icon(
         Icons.skip_previous_rounded,

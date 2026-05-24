@@ -6,6 +6,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:percobaan/data/database_lyrics.dart/lyrics_manager.dart';
+import 'dart:async';
 
 class PositionData {
   final Duration position;
@@ -20,12 +21,18 @@ class AudioProvider with ChangeNotifier {
   SongModel? _currentSong;
   bool _isPlaying = false;
   bool _isPlayerExpanded = false;
+  Timer? _playbackTimer;
+  int _purePlaybackSeconds = 0;
+  bool _isTrueOneRound = false;
 
   AudioPlayer get player => _player;
   List<SongModel> get playlist => _playlist;
   SongModel? get currentSong => _currentSong;
   bool get isPlaying => _isPlaying;
   bool get isPlayerExpanded => _isPlayerExpanded;
+  bool get isTrueOneRound => _isTrueOneRound;
+  int get purePlaybackSeconds => _purePlaybackSeconds;
+  
 
   Stream<PositionData> get positionDataStream => _positionDataStream;
   late Stream<PositionData> _positionDataStream;
@@ -91,7 +98,23 @@ class AudioProvider with ChangeNotifier {
 
     _player.currentIndexStream.listen((index) {
       if (index != null && _playlist.isNotEmpty && index < _playlist.length) {
-        _currentSong = _playlist[index];
+        
+        final newSong = _playlist[index];
+
+        // LOGIKA PENYELAMAT: Cek dulu, apakah lagunya BENERAN ganti?
+        // Biar timer gak dibunuh pas mesin cuma lagi loading lirik
+        if (_currentSong == null || _currentSong!.id != newSong.id) {
+          _currentSong = newSong;
+          
+          resetPlaybackTimer(); // Balikin ke 0 karena ini beneran lagu baru
+          
+          // NAPAS BUATAN: Kalau lagunya ganti secara otomatis (auto-next), 
+          // status lagu kan masih 'Playing', jadi timernya WAJIB dinyalain lagi manual di sini!
+          if (_player.playing) {
+            startPlaybackTimer();
+          }
+        }
+        
         notifyListeners();
       }
     });
@@ -102,13 +125,23 @@ class AudioProvider with ChangeNotifier {
 
       if (_isPlaying != isPlayingNow) {
         _isPlaying = isPlayingNow;
+
+        if (_isPlaying) {
+          startPlaybackTimer();
+        } else {
+          stopPlaybackTimer();
+        }
+
         notifyListeners();
       }
+
+      
 
       if (processingState == ProcessingState.completed) {
         _isPlaying = false;
         _player.seek(Duration.zero);
         _player.pause();
+        stopPlaybackTimer();
         notifyListeners();
       }
     });
@@ -122,7 +155,55 @@ class AudioProvider with ChangeNotifier {
     });
   }
 
+  void startPlaybackTimer() {
+    // TODO A: Keamanan. Pastikan timer yang lama dimatikan dulu (cancel) sebelum bikin baru, 
+    // biar nggak ada kejadian "timer dobel" yang bikin hitungan jadi 2x lipat lebih cepet.
+    _playbackTimer?.cancel();
+
+    
+    // Bikin stopwatch berdetak setiap 1 detik
+    _playbackTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      
+      // TODO B: Setiap 1 detik, tambahin variabel _purePlaybackSeconds dengan angka 1.
+      _purePlaybackSeconds++;
+      print("🔥 DETIK MESIN JALAN: $_purePlaybackSeconds");
+      // TODO C: Bikin logika IF. Kalau _purePlaybackSeconds udah mencapai 60:
+      // 1. Eksekusi fungsi simpan ke database (buat sekarang, print("1 Menit Tercatat!") aja dulu)
+      // 2. Reset _purePlaybackSeconds balik ke 0 (biar dia ngitung menit ke-2).
+      if (_purePlaybackSeconds >= 60 && !_isTrueOneRound) {
+        _isTrueOneRound = true;
+        print("1 Menit Tercatat!");
+        
+      }
+
+      if (player.position.inSeconds < 2 && _isTrueOneRound) {
+        _isTrueOneRound = false;
+        _purePlaybackSeconds = 0;
+        print("Putaran baru, status gembok di-reset!");
+      }
+      notifyListeners();
+    });
+  }
+
+  void stopPlaybackTimer() {
+    // TODO D: Matikan _playbackTimer (cancel). 
+    // Catatan: JANGAN mereset _purePlaybackSeconds ke 0 di sini! 
+    // Biarin angkanya menggantung (misal di 45 detik) biar pas di-play lagi, dia ngelanjutin.
+    _playbackTimer?.cancel();
+  }
+  
+  // === 4. FUNGSI RESET TOTAL (GANTI LAGU) ===
+  void resetPlaybackTimer() {
+    // TODO E: Matikan timer (cancel), DAN reset _purePlaybackSeconds jadi 0.
+    // Ini dieksekusi HANYA kalau user ganti ke lagu lain.
+    _playbackTimer?.cancel();
+    _purePlaybackSeconds = 0;
+    _isTrueOneRound = false;
+
+  }
+
   Future<void> playPlaylist(List<SongModel> songs, int index) async {
+    resetPlaybackTimer();
     _playlist = songs;
     _currentSong = songs[index];
     _isPlayerExpanded = true;
@@ -184,8 +265,14 @@ class AudioProvider with ChangeNotifier {
     }
   }
 
-  void pause() => _player.pause();
-  void resume() => _player.play();
+  void pause() {
+    _player.pause();
+  }
+  void resume() {
+    _player.play();
+  }
+
+  
   void seek(Duration position) => _player.seek(position);
 
   void togglePlayerExpanded() {

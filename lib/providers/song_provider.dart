@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 class SongProvider with ChangeNotifier {
    List<SongModel> _globalSongs = [];
   bool _isLoadingSongs = true;
+  
 
   List<SongModel> get globalSongs => _globalSongs;
   bool get isLoadingSongs => _isLoadingSongs;
