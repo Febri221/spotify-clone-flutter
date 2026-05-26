@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:percobaan/models/rekap_model.dart';
 import 'package:percobaan/providers/audio_provider.dart';
 import 'package:percobaan/providers/playlist_provider.dart';
 import 'package:percobaan/providers/song_provider.dart';
@@ -24,9 +25,13 @@ Future<void> main() async {
   );
 
   await Hive.initFlutter();
+ 
+  Hive.registerAdapter(DailyLogAdapter());
+
   await Hive.openBox('Playlists');
   await Hive.openBox('HiddenSongs');
   await Hive.openBox('Favorites');
+  await Hive.openBox<DailyLog>('daily_logs');
 
   print("DEBUG: 3. Mulai Init Firebase");
   try {

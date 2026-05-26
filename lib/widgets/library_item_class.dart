@@ -16,7 +16,7 @@ class LibraryItem extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
   final String? category;
-  final List<SongModel> songs;
+  final List<SongModelBuatanSendiri> songs;
   final bool isHighlighted;
   final Function(bool)? onTouch;
 

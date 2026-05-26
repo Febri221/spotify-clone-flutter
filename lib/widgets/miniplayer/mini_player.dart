@@ -240,7 +240,6 @@ class MiniPlayerWidget extends StatelessWidget {
                                     return IconButton(
                                       onPressed: () {
                                         audioProvider.togglePlay();
-                                        audioProvider.stopPlaybackTimer();
                                       },
                                       icon: Icon(
                                         isPlaying

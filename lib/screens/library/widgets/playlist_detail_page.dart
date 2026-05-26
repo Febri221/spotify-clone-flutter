@@ -85,16 +85,28 @@ class _PlaylistDetailPageState extends State<PlaylistDetailPage> {
 
   // --- LOGIC AUDIO (FIXED) ---
   void playSong(int index) async {
-    // Panggil fungsi play dari AudioManager
-    // Fungsi ini di AudioManager kamu sudah otomatis set source, set duration, dan play.
-    await context.read<AudioProvider>().playPlaylist(_currentSongs, index);
+    final provider = context.read<AudioProvider>();
+    final laguYangDiklik = _currentSongs[index];
 
-    // Update UI biar mini player muncul
-    // AudioManager().isPlayerExpanded.value = true;
-    if (mounted) {
-    context.read<AudioProvider>().togglePlayerExpanded();
+    // 1. CEK DULU: Apakah lagu yang diklik ini SAMA kayak yang lagi muter sekarang?
+    if (provider.currentSong?.id == laguYangDiklik.id) {
+      
+      print("⏩ Lagu yang sama diklik, timer rekap aman gak di-reset.");
+      // Cukup buka/expand playernya aja tanpa nge-reset playlist
+      if (mounted) {
+        provider.togglePlayerExpanded();
+      }
+      
+    } else {
+      
+      // 2. Kalau BEDA (user milih lagu lain), baru eksekusi playPlaylist & reset timer
+      print("🔄 Lagu baru dipilih, memutar lagu dan mereset timer.");
+      await provider.playPlaylist(_currentSongs, index);
+
+      if (mounted) {
+        provider.togglePlayerExpanded();
+      }
     }
-
   }
 
   void _removeSong(int index) {

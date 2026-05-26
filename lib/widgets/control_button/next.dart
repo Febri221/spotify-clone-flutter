@@ -12,7 +12,6 @@ class NextControll extends StatelessWidget {
       onPressed: () async {
         await audioProvider.player.seekToNext();
         audioProvider.resume();
-        audioProvider.resetPlaybackTimer();
         
       },
       icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 50),

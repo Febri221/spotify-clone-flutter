@@ -427,7 +427,6 @@ class _NowPlayingPageState extends State<NowPlayingPage>
                     onPressed: () {
                       // Panggil fungsi togglePlay yang udah lo buat di Provider
                       audioProvider.togglePlay();
-                      audioProvider.stopPlaybackTimer();
                     },
                     icon: Icon(
                       isPlaying

@@ -1,10 +1,10 @@
-class SongModel {
+class SongModelBuatanSendiri {
   final String title;
   final String artist;
   final String imageUrl;
   final String? audioUrl;
   
-    SongModel({
+    SongModelBuatanSendiri({
     required this.title,
     required this.artist,
     required this.imageUrl,
@@ -18,8 +18,8 @@ class SongModel {
     'audioUrl': audioUrl,
   };
 
-  factory SongModel.fromMap(Map<String, dynamic> map) {
-    return SongModel(
+  factory SongModelBuatanSendiri.fromMap(Map<String, dynamic> map) {
+    return SongModelBuatanSendiri(
       title: map['title'],
       artist: map['artist'],
       imageUrl: map['imageUrl'],

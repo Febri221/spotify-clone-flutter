@@ -27,7 +27,6 @@ class LoopButton extends StatelessWidget {
               newMode = LoopMode.one;
             }
             await audioProvider.player.setLoopMode(newMode);
-            audioProvider.resetPlaybackTimer();
           },
           icon: Icon(icon, color: color, size: 25),
         );
