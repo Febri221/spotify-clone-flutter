@@ -11,7 +11,6 @@ import 'dart:async';
 import 'package:hive/hive.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 // // Tambah import di atas file
-import 'package:percobaan/services/http_client.dart';
 import 'package:percobaan/services/yt_stream.dart';
 
 class PositionData {
@@ -44,6 +43,9 @@ class AudioProvider with ChangeNotifier {
 
   Stream<PositionData> get positionDataStream => _positionDataStream;
   late Stream<PositionData> _positionDataStream;
+
+  late ConcatenatingAudioSource _playlistSource;
+
 
   MediaItem? _currentYtItem;
 
@@ -162,6 +164,36 @@ Uri? get displayArtUri => _currentYtItem?.artUri;
   }
 
 
+Future<void>_playFirstSong(String title, String startVideoId, String artist, String thumbnailUrl) async{
+  try {
+    _playlistSource = ConcatenatingAudioSource(children: []);
+    
+  } catch (e) {
+    print('Gagal memutar YouTube: $e');
+  }
+
+}
+
+Future<YtStreamSource?> _createYtAudioSource(String videoId, String title, String artist, String thumbnailUrl) async {
+  try {
+    final manifest = await _yt.videos.streamsClient.getManifest(videoId, ytClients: [
+      YoutubeApiClient.androidVr,
+      YoutubeApiClient.ios,
+      YoutubeApiClient.android,
+    ]); 
+    final audioStreams = manifest.audioOnly.toList();
+    final selectedStream = audioStreams.first;
+
+    final mediaItem = MediaItem(id: videoId, title: title, artist: artist, artUri: Uri.parse(thumbnailUrl));
+    return YtStreamSource(
+      selectedStream, tag: mediaItem
+    );
+  } catch (e) {
+    print('Gagal buat YtStreamSource: $e');
+    return null;
+  }
+}
+
 
 Future<void> playYoutubeSong(
   String videoId,
@@ -171,70 +203,59 @@ Future<void> playYoutubeSong(
 ) async {
   print('Streaming YouTube: $title...');
   try {
-    final manifest = await _yt.videos.streamsClient.getManifest(
-  videoId,
-  // ✅ Pakai client ID yang berbeda dari web browser
-  // androidVr = client ID milik YouTube VR app → jarang di-rate limit
-  ytClients: [
-    YoutubeApiClient.androidVr,
-    YoutubeApiClient.ios,
-    YoutubeApiClient.android,
-  ],
-).timeout(const Duration(seconds: 30));
+    _playlistSource = ConcatenatingAudioSource(children: []);
 
- 
-    // Pilih m4a/mp4 dengan bitrate tertinggi
-    final audioStreams = manifest.audioOnly.toList();
-    final mp4Streams = audioStreams
-        .where((s) =>
-            s.container.name == 'mp4' || s.container.name == 'm4a')
-        .toList();
-    final candidates = mp4Streams.isNotEmpty ? mp4Streams : audioStreams;
-    candidates.sort(
-      (a, b) => b.bitrate.bitsPerSecond.compareTo(a.bitrate.bitsPerSecond),
-    );
-    final selectedStream = candidates.first;
- 
-    print(
-      'Selected: ${selectedStream.container.name} '
-      '@ ${selectedStream.bitrate.bitsPerSecond ~/ 1000}kbps '
-      '| ${selectedStream.size.totalMegaBytes.toStringAsFixed(1)}MB',
-    );
- 
-    final mediaItem = MediaItem(
-      id: videoId,
-      title: title,
-      artist: artist,
-      artUri: Uri.parse(thumbnailUrl),
-    );
- 
-    // ✅ Inject _yt agar YtStreamSource pakai client internal YT Explode
-    final streamSource = YtStreamSource(    
-      selectedStream,
-      maxRetries: 3,
-      retryDelay: const Duration(seconds: 2),
-      tag: mediaItem,
-    );
- 
- _currentSong = null;
-_currentYtItem = mediaItem;
-_isPlayerExpanded = true;
-notifyListeners();
-    // preload: true → just_audio langsung buka koneksi & mulai buffer
-    await _player.setAudioSource(streamSource, preload: true);
-    await _player.play();
- 
-    _isPlayerExpanded = true;
-    notifyListeners();
-    print('▶ Streaming dimulai: $title');
-  } on AudioLoadException catch (e) {
-    print('Stream error: ${e.message}');
-  } on TimeoutException {
-    print('Timeout saat fetch manifest. Cek koneksi internet.');
-  } catch (e) {
+    final firstSong = await _createYtAudioSource(videoId, title, artist, thumbnailUrl);
+    if (firstSong != null) {
+      await _playlistSource.add(firstSong);
+      await _player.setAudioSource(_playlistSource);
+      await _player.play();
+    }
+
+  _currentYtItem = firstSong?.tag as MediaItem;
+  _isPlayerExpanded = true;
+  notifyListeners();
+
+  _fetchRelatedSong(videoId);
+
+   } catch (e) {
     print('Gagal memutar YouTube: $e');
   }
 }
+
+// 3. FUNGSI INTEL: Jalan di background buat nyari lagu Next
+  Future<void> _fetchRelatedSong(String currentVideoId) async {
+    try {
+      print("Intel lagi nyari lagu rekomendasi...");
+      
+  
+      var fullVideo = await _yt.videos.get(currentVideoId);
+
+      var relatedVideos = await _yt.videos.getRelatedVideos(fullVideo);
+      
+      if (relatedVideos != null && relatedVideos.isNotEmpty) {
+        var nextVideo = relatedVideos.first; // Ambil lagu pertama dari rekomendasi
+        String nextThumb = "https://i.ytimg.com/vi/${nextVideo.id.value}/hqdefault.jpg";
+
+        // Suruh Koki masakin lagu rekomendasi ini
+        final laguKedua = await _createYtAudioSource(
+          nextVideo.id.value, 
+          nextVideo.title, 
+          nextVideo.author, 
+          nextThumb
+        );
+
+        if (laguKedua != null) {
+          // 🔥 TAMBAHIN KE MEJA PRASMANAN YANG LAGI JALAN!
+          await _playlistSource.add(laguKedua);
+          print("Sah! Lagu ${nextVideo.title} masuk ke antrean Next!");
+          // Tombol Next di MiniPlayer lu otomatis bakal NYALA!
+        }
+      }
+    } catch (e) {
+      print("Intel gagal nyari lagu: $e");
+    }
+  }
 
   void startPlaybackTimer() {
     // Amankan dari dobel instansi timer
