@@ -9,6 +9,10 @@ import 'package:percobaan/data/database_lyrics.dart/lyrics_manager.dart';
 import 'package:percobaan/models/rekap_model.dart';
 import 'dart:async';
 import 'package:hive/hive.dart';
+import 'package:youtube_explode_dart/youtube_explode_dart.dart';
+// // Tambah import di atas file
+import 'package:percobaan/services/http_client.dart';
+import 'package:percobaan/services/yt_stream.dart';
 
 class PositionData {
   final Duration position;
@@ -16,6 +20,7 @@ class PositionData {
   final Duration duration;
   PositionData(this.position, this.bufferedPosition, this.duration);
 }
+
 
 class AudioProvider with ChangeNotifier {
   final AudioPlayer _player = AudioPlayer();
@@ -27,6 +32,8 @@ class AudioProvider with ChangeNotifier {
   int _purePlaybackSeconds = 0;
   bool _isTrueOneRound = false;
 
+  final YoutubeExplode _yt = YoutubeExplode();
+
   AudioPlayer get player => _player;
   List<SongModel> get playlist => _playlist;
   SongModel? get currentSong => _currentSong;
@@ -37,6 +44,14 @@ class AudioProvider with ChangeNotifier {
 
   Stream<PositionData> get positionDataStream => _positionDataStream;
   late Stream<PositionData> _positionDataStream;
+
+  MediaItem? _currentYtItem;
+
+// 2. Getter universal untuk miniplayer
+bool get hasActiveTrack => _currentSong != null || _currentYtItem != null;
+String get displayTitle => _currentSong?.title ?? _currentYtItem?.title ?? '';
+String get displayArtist => _currentSong?.artist ?? _currentYtItem?.artist ?? '';
+Uri? get displayArtUri => _currentYtItem?.artUri;
 
   PositionData get currentPositionData => PositionData(
     player.position,
@@ -146,6 +161,81 @@ class AudioProvider with ChangeNotifier {
     });
   }
 
+
+
+Future<void> playYoutubeSong(
+  String videoId,
+  String title,
+  String artist,
+  String thumbnailUrl,
+) async {
+  print('Streaming YouTube: $title...');
+  try {
+    final manifest = await _yt.videos.streamsClient.getManifest(
+  videoId,
+  // ✅ Pakai client ID yang berbeda dari web browser
+  // androidVr = client ID milik YouTube VR app → jarang di-rate limit
+  ytClients: [
+    YoutubeApiClient.androidVr,
+    YoutubeApiClient.ios,
+    YoutubeApiClient.android,
+  ],
+).timeout(const Duration(seconds: 30));
+
+ 
+    // Pilih m4a/mp4 dengan bitrate tertinggi
+    final audioStreams = manifest.audioOnly.toList();
+    final mp4Streams = audioStreams
+        .where((s) =>
+            s.container.name == 'mp4' || s.container.name == 'm4a')
+        .toList();
+    final candidates = mp4Streams.isNotEmpty ? mp4Streams : audioStreams;
+    candidates.sort(
+      (a, b) => b.bitrate.bitsPerSecond.compareTo(a.bitrate.bitsPerSecond),
+    );
+    final selectedStream = candidates.first;
+ 
+    print(
+      'Selected: ${selectedStream.container.name} '
+      '@ ${selectedStream.bitrate.bitsPerSecond ~/ 1000}kbps '
+      '| ${selectedStream.size.totalMegaBytes.toStringAsFixed(1)}MB',
+    );
+ 
+    final mediaItem = MediaItem(
+      id: videoId,
+      title: title,
+      artist: artist,
+      artUri: Uri.parse(thumbnailUrl),
+    );
+ 
+    // ✅ Inject _yt agar YtStreamSource pakai client internal YT Explode
+    final streamSource = YtStreamSource(    
+      selectedStream,
+      maxRetries: 3,
+      retryDelay: const Duration(seconds: 2),
+      tag: mediaItem,
+    );
+ 
+ _currentSong = null;
+_currentYtItem = mediaItem;
+_isPlayerExpanded = true;
+notifyListeners();
+    // preload: true → just_audio langsung buka koneksi & mulai buffer
+    await _player.setAudioSource(streamSource, preload: true);
+    await _player.play();
+ 
+    _isPlayerExpanded = true;
+    notifyListeners();
+    print('▶ Streaming dimulai: $title');
+  } on AudioLoadException catch (e) {
+    print('Stream error: ${e.message}');
+  } on TimeoutException {
+    print('Timeout saat fetch manifest. Cek koneksi internet.');
+  } catch (e) {
+    print('Gagal memutar YouTube: $e');
+  }
+}
+
   void startPlaybackTimer() {
     // Amankan dari dobel instansi timer
     _playbackTimer?.cancel();
@@ -155,7 +245,7 @@ class AudioProvider with ChangeNotifier {
       print("🔥 DETIK MESIN JALAN: $_purePlaybackSeconds");
 
       // Menggunakan 10 detik buat testing
-      if (_purePlaybackSeconds >= 10 && !_isTrueOneRound) {
+      if (_purePlaybackSeconds >= 60 && !_isTrueOneRound) {
         _isTrueOneRound = true;
         if (_currentSong != null) {
           _saveDailyLogDatabase(_currentSong!);
@@ -197,6 +287,7 @@ class AudioProvider with ChangeNotifier {
 
   Future<void> playPlaylist(List<SongModel> songs, int index) async {
     resetPlaybackTimer();
+      _currentYtItem = null;
     _playlist = songs;
     _currentSong = songs[index];
     _isPlayerExpanded = true;

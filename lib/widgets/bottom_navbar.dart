@@ -3,10 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:percobaan/providers/audio_provider.dart';
 import 'package:percobaan/screens/library/library_page.dart';
 import 'package:percobaan/screens/home/home_page.dart';
-import 'package:percobaan/screens/search_page.dart';
 import 'package:percobaan/screens/premium_page.dart';
 import 'package:percobaan/screens/profile/Profile_page.dart';
-
+import 'package:percobaan/screens/search/trigger_button.dart';
 import 'package:percobaan/widgets/miniplayer/mini_player.dart';
 import 'package:provider/provider.dart';
 
@@ -57,7 +56,7 @@ class _BottomNavbarState extends State<BottomNavbar> {
   Widget build(BuildContext context) {
     final List<Widget> currentPages = [
       const HomePage(),
-      SearchPage(),
+      const TriggerSearch(),
 
       Navigator(
         key: libraryNavKey,

@@ -4,7 +4,6 @@ import 'package:on_audio_query/on_audio_query.dart';
 import 'package:marquee/marquee.dart';
 import 'package:percobaan/screens/nowplaying_screens/now_playing_page.dart';
 import 'package:percobaan/screens/player/seek_bar_miniplayer.dart';
-//Providers
 import 'package:provider/provider.dart';
 import 'package:percobaan/providers/audio_provider.dart';
 
@@ -13,14 +12,13 @@ class MiniPlayerWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Logic: Dengerin status Player Expanded (Aktif/Gak)
     final audioProvider = context.read<AudioProvider>();
 
-    return Selector<AudioProvider, SongModel?>(
-      selector: (_, provider) => provider.currentSong,
-
-      builder: (context, currentSong, child) {
-        if (currentSong == null) return const SizedBox.shrink();
+    // ✅ Selector baru: pantau hasActiveTrack (lokal ATAU YouTube)
+    return Selector<AudioProvider, bool>(
+      selector: (_, p) => p.hasActiveTrack,
+      builder: (context, hasTrack, _) {
+        if (!hasTrack) return const SizedBox.shrink();
 
         return GestureDetector(
           onTap: () {
@@ -30,47 +28,35 @@ class MiniPlayerWidget extends StatelessWidget {
                 barrierColor: const Color(0xFF191414),
                 transitionDuration: const Duration(milliseconds: 300),
                 reverseTransitionDuration: const Duration(milliseconds: 300),
-
                 pageBuilder: (_, __, ___) => const NowPlayingPage(),
-                transitionsBuilder:
-                    (context, animation, secondaryAnimation, child) {
-                      const begin = Offset(0.0, 1.0);
-                      const end = Offset.zero;
-                      const curve = Curves.fastOutSlowIn;
-
-                      var tween = Tween(
-                        begin: begin,
-                        end: end,
-                      ).chain(CurveTween(curve: curve));
-                      return SlideTransition(
-                        position: animation.drive(tween),
-                        child: child,
-                      );
-                    },
+                transitionsBuilder: (_, animation, __, child) {
+                  return SlideTransition(
+                    position: Tween(
+                      begin: const Offset(0.0, 1.0),
+                      end: Offset.zero,
+                    ).chain(CurveTween(curve: Curves.fastOutSlowIn)).animate(animation),
+                    child: child,
+                  );
+                },
               ),
             );
           },
           child: Selector<AudioProvider, int>(
-            selector: (_, provider) => provider.currentTabIndex,
-
-            builder: (context, currentTabIndex, child) {
+            selector: (_, p) => p.currentTabIndex,
+            builder: (context, _, __) {
               return AnimatedContainer(
                 duration: const Duration(milliseconds: 250),
-
-                height: 78, // Tambah 2 pixel buat tempat garis
+                height: 78,
                 width: double.infinity,
                 clipBehavior: Clip.antiAlias,
-
-                margin: EdgeInsets.only(left: 8, right: 8, bottom: 8),
-
+                margin: const EdgeInsets.only(left: 8, right: 8, bottom: 8),
                 decoration: BoxDecoration(
-                  color: Color(0xFF0DBDE6),
+                  color: const Color(0xFF0DBDE6),
                   borderRadius: BorderRadius.circular(8),
                 ),
-
-                // === DI SINI PERUBAHANNYA: KITA PAKE COLUMN ===
                 child: Column(
                   children: [
+                    // ── Seek Bar ────────────────────────────────────────────
                     ClipRRect(
                       borderRadius: const BorderRadius.only(
                         bottomLeft: Radius.circular(8),
@@ -78,173 +64,123 @@ class MiniPlayerWidget extends StatelessWidget {
                       ),
                       child: StreamBuilder<Duration>(
                         stream: audioProvider.player.positionStream,
-                        builder: (context, snapshotPosition) {
-                          final position =
-                              snapshotPosition.data ?? Duration.zero;
-
+                        builder: (_, snapPos) {
                           return StreamBuilder<Duration?>(
                             stream: audioProvider.player.durationStream,
-                            builder: (context, snapshotDuration) {
-                              // KUNCI: Ambil data duration asli, jika null set ke 1 detik biar ga crash
-                              final duration = snapshotDuration.data ??
-                                  const Duration(seconds: 1);
-
+                            builder: (_, snapDur) {
                               return MiniSeekBar(
-                                duration:
-                                    duration, 
-                                position: position,
-                                onChangeEnd: (newPosition) {
-                                  audioProvider.player.seek(newPosition);
-                                },
+                                duration: snapDur.data ?? const Duration(seconds: 1),
+                                position: snapPos.data ?? Duration.zero,
+                                onChangeEnd: (pos) => audioProvider.player.seek(pos),
                               );
                             },
                           );
                         },
                       ),
                     ),
-                    // --- BAGIAN 1: KONTEN UTAMA (FOTO, JUDUL, TOMBOL) ---
+
+                    // ── Konten Utama ─────────────────────────────────────────
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Row(
                           children: [
-                            /// === FOTO ALBUM ===
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: QueryArtworkWidget(
-                                id: currentSong.id,
-                                type: ArtworkType.AUDIO,
-                                nullArtworkWidget: Container(
-                                  width: 50,
-                                  height: 50,
-                                  color: Colors.grey[800],
-                                  child: const Icon(
-                                    Icons.music_note,
-                                    color: Colors.white54,
-                                  ),
-                                ),
-                                artworkFit: BoxFit.cover,
-                                size: 200, // Resolusi gambar yang diambil (200x200)
-                              ),
-                            ),
-                            SizedBox(width: 3,),
+                            // ── Artwork: lokal pakai QueryArtwork, YT pakai Image.network ──
+                            _buildArtwork(context),
+                            const SizedBox(width: 3),
 
-                            // === JUDUL & ARTIS ===
+                            // ── Judul & Artis ─────────────────────────────────
                             Expanded(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  // Judul (Marquee)
-                                  LayoutBuilder(
-                                    builder: (context, constraints) {
-                                      final textStyle = const TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                      );
-                                      final textPainter =
-                                          TextPainter(
-                                            text: TextSpan(
-                                              text: currentSong.title,
-                                              style: textStyle,
-                                            ),
+                              child: Selector<AudioProvider, (String, String)>(
+                                selector: (_, p) => (p.displayTitle, p.displayArtist),
+                                builder: (_, titles, __) {
+                                  return Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      // Judul dengan Marquee
+                                      LayoutBuilder(
+                                        builder: (ctx, constraints) {
+                                          const style = TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14,
+                                          );
+                                          final painter = TextPainter(
+                                            text: TextSpan(text: titles.$1, style: style),
                                             maxLines: 1,
                                             textDirection: TextDirection.ltr,
-                                          )..layout(
-                                            minWidth: 0,
-                                            maxWidth: double.infinity,
-                                          );
+                                          )..layout(minWidth: 0, maxWidth: double.infinity);
 
-                                      if (textPainter.size.width >
-                                          constraints.maxWidth) {
-                                        return SizedBox(
-                                          height: 20,
-                                          child: Marquee(
-                                            text: currentSong.title,
-                                            style: textStyle,
-                                            scrollAxis: Axis.horizontal,
-                                            blankSpace: 50.0,
-                                            velocity: 30.0,
-                                            startPadding: 0.0,
-                                            accelerationDuration: Duration.zero,
-                                          ),
-                                        );
-                                      } else {
-                                        return SizedBox(
-                                          height: 20,
-                                          width: double.infinity,
-                                          child: Text(
-                                            currentSong.title,
-                                            style: textStyle,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        );
-                                      }
-                                    },
-                                  ),
-                                  const SizedBox(height: 2),
-                                  // Artis
-                                  Text(
-                                    currentSong.artist ?? "Unknown",
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
+                                          return SizedBox(
+                                            height: 20,
+                                            child: painter.size.width > constraints.maxWidth
+                                                ? Marquee(
+                                                    text: titles.$1,
+                                                    style: style,
+                                                    blankSpace: 50,
+                                                    velocity: 30,
+                                                    accelerationDuration: Duration.zero,
+                                                  )
+                                                : Text(
+                                                    titles.$1,
+                                                    style: style,
+                                                    maxLines: 1,
+                                                    overflow: TextOverflow.ellipsis,
+                                                  ),
+                                          );
+                                        },
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        titles.$2,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ),
 
-                            // === TOMBOL CONTROLS (PREV - PLAY - NEXT) ===
+                            // ── Controls ──────────────────────────────────────
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                // --- TOMBOL PREVIOUS ---
+                                // Prev
                                 StreamBuilder<SequenceState?>(
-                                  stream:
-                                      audioProvider.player.sequenceStateStream,
-                                  builder: (context, snapshot) {
-                                    final sequenceState = snapshot.data;
-                                    final bool canGoBack =
-                                        (sequenceState?.currentIndex ?? 0) > 0;
-
+                                  stream: audioProvider.player.sequenceStateStream,
+                                  builder: (_, snap) {
+                                    final canBack = (snap.data?.currentIndex ?? 0) > 0;
                                     return IconButton(
-                                      onPressed: canGoBack
+                                      onPressed: canBack
                                           ? () {
-                                              audioProvider.player
-                                                  .seekToPrevious();
+                                              audioProvider.player.seekToPrevious();
                                               audioProvider.player.play();
                                               audioProvider.resetPlaybackTimer();
                                             }
                                           : null,
                                       icon: Icon(
                                         Icons.skip_previous,
-                                        color: canGoBack
-                                            ? Colors.white
-                                            : Colors.grey,
+                                        color: canBack ? Colors.white : Colors.grey,
                                         size: 30,
                                       ),
                                     );
                                   },
                                 ),
 
-                                // --- TOMBOL PLAY/PAUSE ---
+                                // Play/Pause
                                 Selector<AudioProvider, bool>(
-                                  selector: (_, provider) => provider.isPlaying,
-                                  builder: (context, isPlaying, child) {
+                                  selector: (_, p) => p.isPlaying,
+                                  builder: (_, isPlaying, __) {
                                     return IconButton(
-                                      onPressed: () {
-                                        audioProvider.togglePlay();
-                                      },
+                                      onPressed: audioProvider.togglePlay,
                                       icon: Icon(
-                                        isPlaying
-                                            ? Icons.pause
-                                            : Icons.play_arrow,
+                                        isPlaying ? Icons.pause : Icons.play_arrow,
                                         color: Colors.white,
                                         size: 40,
                                       ),
@@ -252,19 +188,15 @@ class MiniPlayerWidget extends StatelessWidget {
                                   },
                                 ),
 
-                                // --- TOMBOL NEXT ---
+                                // Next
                                 StreamBuilder<SequenceState?>(
-                                  stream:
-                                      audioProvider.player.sequenceStateStream,
-                                  builder: (context, snapshot) {
-                                    final sequenceState = snapshot.data;
-                                    final bool canGoNext =
-                                        (sequenceState?.currentIndex ?? 0) <
-                                        ((sequenceState?.sequence.length ?? 0) -
-                                            1);
-
+                                  stream: audioProvider.player.sequenceStateStream,
+                                  builder: (_, snap) {
+                                    final canNext =
+                                        (snap.data?.currentIndex ?? 0) <
+                                        ((snap.data?.sequence.length ?? 0) - 1);
                                     return IconButton(
-                                      onPressed: canGoNext
+                                      onPressed: canNext
                                           ? () {
                                               audioProvider.player.seekToNext();
                                               audioProvider.player.play();
@@ -273,9 +205,7 @@ class MiniPlayerWidget extends StatelessWidget {
                                           : null,
                                       icon: Icon(
                                         Icons.skip_next,
-                                        color: canGoNext
-                                            ? Colors.white
-                                            : Colors.grey,
+                                        color: canNext ? Colors.white : Colors.grey,
                                         size: 30,
                                       ),
                                     );
@@ -287,8 +217,6 @@ class MiniPlayerWidget extends StatelessWidget {
                         ),
                       ),
                     ),
-
-                  
                   ],
                 ),
               );
@@ -296,6 +224,59 @@ class MiniPlayerWidget extends StatelessWidget {
           ),
         );
       },
+    );
+  }
+
+  // ── Artwork Builder ──────────────────────────────────────────────────────────
+  Widget _buildArtwork(BuildContext context) {
+    return Selector<AudioProvider, (int?, Uri?)>(
+      selector: (_, p) => (p.currentSong?.id, p.displayArtUri),
+      builder: (_, data, __) {
+        final localId = data.$1;
+        final ytArtUri = data.$2;
+
+        // Kalau ada ID lokal → pakai QueryArtworkWidget
+        if (localId != null) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: QueryArtworkWidget(
+              id: localId,
+              type: ArtworkType.AUDIO,
+              nullArtworkWidget: _defaultArtwork(),
+              artworkFit: BoxFit.cover,
+              size: 200,
+            ),
+          );
+        }
+
+        // Kalau YouTube → pakai thumbnail dari URL
+        if (ytArtUri != null) {
+          return ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: Image.network(
+              ytArtUri.toString(),
+              width: 50,
+              height: 50,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => _defaultArtwork(),
+            ),
+          );
+        }
+
+        return _defaultArtwork();
+      },
+    );
+  }
+
+  Widget _defaultArtwork() {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        color: Colors.grey[800],
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: const Icon(Icons.music_note, color: Colors.white54),
     );
   }
 }

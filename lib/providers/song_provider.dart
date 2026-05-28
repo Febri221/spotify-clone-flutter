@@ -13,6 +13,19 @@ class SongProvider with ChangeNotifier {
   List<SongModel> get globalSongs => _globalSongs;
   bool get isLoadingSongs => _isLoadingSongs;
 
+    List<SongModel> _recentSong = [];
+  List<SongModel> get reecentSong => _recentSong;
+
+
+    void addToRecentSearch(SongModel song) {
+    _recentSong.removeWhere((item) => item.id == song.id);
+    _recentSong.insert(0, song);
+
+    if (_recentSong.length > 10) {
+      _recentSong.removeLast();
+    }
+    notifyListeners();
+  }
 
    Future<void> fetchGlobalSongs() async {
     final OnAudioQuery audioQuery = OnAudioQuery();
