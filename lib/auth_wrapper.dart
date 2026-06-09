@@ -1,9 +1,9 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:percobaan/widgets/bottom_navbar.dart';
-import 'package:percobaan/screens/auth/login_screen.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import '../screens/auth/onboarding_screen.dart';
+import 'package:percobaan/features/auth/view/onboarding_screen.dart';
+import 'package:percobaan/features/auth/view/sign_up_screen.dart';
+import 'package:percobaan/features/main_navigation/view/bottom_navbar.dart';
 
 class AuthWrapper extends StatefulWidget {
   const AuthWrapper({super.key});
@@ -24,7 +24,6 @@ class _AuthWrapperState extends State<AuthWrapper> {
 
   Future<void> _checkOnboardingStatus() async {
     final prefs = await SharedPreferences.getInstance();
-    print("DEBUG: Stempel Onboarding berhasil dicetak!");
     setState(() {
       _hasSeenOnboarding = prefs.getBool('hasSeenOnboarding') ?? false;
       _isLoading = false;
@@ -34,29 +33,27 @@ class _AuthWrapperState extends State<AuthWrapper> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
+      return const Scaffold(
         backgroundColor: Colors.black,
         body: Center(child: CircularProgressIndicator(color: Colors.green)),
       );
     }
+
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Scaffold(
+          return const Scaffold(
             backgroundColor: Colors.black,
             body: Center(child: CircularProgressIndicator(color: Colors.green)),
           );
         }
-        if (snapshot.hasData) {
-          return BottomNavbar();
-        }
 
-        if (_hasSeenOnboarding) {
-          return LoginPage();
-        } else {
-          return OnboardingScreen();
-        }
+        if (snapshot.hasData) return const BottomNavbar();
+
+        return _hasSeenOnboarding
+            ? const SignUpScreen()
+            : const OnboardingScreen();
       },
     );
   }

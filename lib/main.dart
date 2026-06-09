@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:percobaan/models/rekap_model.dart';
-import 'package:percobaan/providers/audio_provider.dart';
-import 'package:percobaan/providers/playlist_provider.dart';
-import 'package:percobaan/providers/song_provider.dart';
+import 'package:percobaan/features/auth/viewmodel/auth_viewmodel.dart';
+import 'package:percobaan/data/models/rekap_model.dart';
+import 'package:percobaan/features/library/viewmodel/library_viewmodel.dart';
+import 'package:percobaan/features/player/viewmodel/audio_viewmodel.dart';
+import 'package:percobaan/features/player/viewmodel/song_viewmodel.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:just_audio_background/just_audio_background.dart';
-import 'package:percobaan/screens/overlay/lyrics_overlay.dart';
+//import 'package:percobaan/screens/overlay/lyrics_overlay.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
 import 'package:provider/provider.dart';
 import 'package:percobaan/auth_wrapper.dart';
-import 'package:percobaan/providers/auth_google_provider.dart';
-
+import 'package:percobaan/shared/widgets/lyrics_overlay.dart';
+import 'package:percobaan/features/library/viewmodel/playlist_viewmodel.dart';
+// import 'package:percobaan/data/services/auth_service.dart';
+// import 'package:percobaan/providers/audio_provider.dart';
+// import 'package:percobaan/providers/playlist_provider.dart';
+// import 'package:percobaan/providers/song_provider.dart';
+// import 'package:percobaan/providers/auth_google_provider.dart';
 
 Future<void> main() async {
   WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
@@ -25,7 +31,7 @@ Future<void> main() async {
   );
 
   await Hive.initFlutter();
- 
+
   Hive.registerAdapter(DailyLogAdapter());
 
   await Hive.openBox('Playlists');
@@ -59,12 +65,11 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AudioProvider()),
-        ChangeNotifierProvider(
-          create: (_) => SongProvider()..fetchGlobalSongs()),
-        ChangeNotifierProvider(create: (_) => PlaylistProvider()),
-        ChangeNotifierProvider(create: (_) => AuthGoogleProvider()),
-
+        ChangeNotifierProvider(create: (_) => AudioViewModel()),
+        ChangeNotifierProvider(create: (_) => SongViewModel()..fetchSongs()),
+        ChangeNotifierProvider(create: (_) => AuthViewModel()),
+        ChangeNotifierProvider(create: (_) => LibraryViewModel()),
+         ChangeNotifierProvider(create: (_) => PlaylistViewModel()),
       ],
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
@@ -72,16 +77,12 @@ class MyApp extends StatelessWidget {
           scaffoldBackgroundColor: const Color(0xFF2962FF), // Biru malam pekat
 
           // dialogBackgroundColor: const Color(0xFF1E293B),
-
           colorScheme: const ColorScheme.dark(
             primary: Color(0xFF38BDF8), // Aksen biru muda
             secondary: Color(0xFF94A3B8),
-
           ),
           inputDecorationTheme: InputDecorationTheme(
-            enabledBorder: UnderlineInputBorder(
-
-            ),
+            enabledBorder: UnderlineInputBorder(),
             focusedBorder: UnderlineInputBorder(
               borderSide: BorderSide(color: Colors.grey.shade800),
             ),
